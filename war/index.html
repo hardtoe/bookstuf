@@ -1,28 +1,162 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<!-- The HTML 4.01 Transitional DOCTYPE declaration-->
-<!-- above set at the top of the file will set     -->
-<!-- the browser's rendering engine into           -->
-<!-- "Quirks Mode". Replacing this declaration     -->
-<!-- with a "Standards Mode" doctype is supported, -->
-<!-- but may lead to some differences in layout.   -->
-
-<html>
-  <head>
-    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-    <link rel="import" href="components/polymer/polymer.html">
-    <title>Hello App Engine</title>
-  </head>
-
-  <body>
-    <h1>Hello, cruel world!</h1>
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		
+		<!--  jQuery -->
+		<script src="jquery.js"></script>
+		
+		<!-- gitkit -->
+		<script type="text/javascript" src="//www.gstatic.com/authtoolkit/js/gitkit.js"></script>
+		<link type=text/css rel=stylesheet href="//www.gstatic.com/authtoolkit/css/gitkit.css" />
+		<script type=text/javascript>
+			window.google.identitytoolkit.setConfig(
+				{
+					widgetUrl:	"http://bookstuf.com/gitkit",
+					signOutUrl:	"/",
+				}
+			);
+		</script>
+		
+		<!-- material design light -->
+		<link rel="stylesheet" href="https://storage.googleapis.com/code.getmdl.io/1.0.0/material.blue-red.min.css">
+		<script src="https://storage.googleapis.com/code.getmdl.io/1.0.0/material.min.js"></script>
+		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+		<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
+		
+		<!-- custom styles -->
+		<style>
+			.done {
+				background-color: #44cc44;
+				/* border-radius:  10px; */
+				padding-left:  10px;
+				padding-right:  10px;
+				padding-top: 2px;
+				padding-bottom:  2px;
+				font-size: large;
+				font-family: Roboto;
+				font-weight: light;
+				color: white;
+			}
+		</style>
+		
+		<title>bookstuf.com</title>
+	</head>
 	
-    <table>
-      <tr>
-        <td colspan="2" style="font-weight:bold;">Available Servlets:</td>        
-      </tr>
-      <tr>
-        <td><a href="bookstuf">Bookstuf</a></td>
-      </tr>
-    </table>
-  </body>
+	<body>
+		<div class="mdl-layout mdl-js-layout mdl-layout--fixed-drawer mdl-layout--fixed-header">
+			<header class="mdl-layout__header mdl-layout__header--scroll">
+				<div class="mdl-layout__header-row">
+     				<span class="mdl-layout-title">bookstuf.com</span>
+					<div class="mdl-layout-spacer"></div>
+					
+					<script type="text/javascript">
+						var currentAccount = 
+							JSON.parse(window.localStorage.getItem("gitkit::currentAccount"));
+						
+						if (currentAccount == null) {
+							document.write('<a id="login" href="javascript:void(0)" onclick="window.google.identitytoolkit.signIn(null);" class="mdl-navigation__link mdl-navigation__link--icon"><i style="vertical-align: middle;" class="material-icons" >account_circle</i><span style="padding-left: 5px; vertical-align: middle;">Sign in</span></a>');
+							
+						} else {
+							document.write('<a id="logout" href="javascript:void(0)" onclick="window.google.identitytoolkit.signOut(null);" class="mdl-navigation__link mdl-navigation__link--icon"><img src="' + JSON.parse(window.localStorage.getItem("gitkit::currentAccount"))["photoUrl"] + '" style="vertical-align: middle; width: 30px; height: 30px; border-radius: 50%;"></img><span style="padding-left: 5px; vertical-align: middle;">Sign out</span></a>');
+						}
+					</script>
+				</div>
+			</header>
+			
+			<div class="mdl-layout__drawer">
+				<span class="mdl-layout-title">menu</span>
+				<nav class="mdl-navigation">
+					<a class="mdl-navigation__link" href="#index-section">Index</a>
+					<a class="mdl-navigation__link" href="#other-section">Other</a>
+					<a class="mdl-navigation__link" href="#service-provider-checklist-section">Account Checklist</a>
+				</nav>
+			</div>
+			
+			<main class="mdl-layout__content">
+				<main class="mdl-components__pages">
+					<section id="service-provider-checklist-section" class="mdl-components-index mdl-components__page is-active">
+						<div class="mdl-grid page-content">
+							<div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--8-col">
+								<div class="mdl-card__title">
+									<h2 class="mdl-card__title-text">1. Create your bookstuf.com account</h2>
+								</div>
+								<div class="mdl-card__supporting-text">
+									Sign in to bookstuf.com using an existing account on a supported website or create a new account.  You can use an existing
+									Google, Facebook, Yahoo, Microsoft, or AOL account if you have one.  
+								</div>
+								<div class="mdl-card__actions">
+									<script type="text/javascript">
+										var currentAccount = 
+											JSON.parse(window.localStorage.getItem("gitkit::currentAccount"));
+										
+										if (currentAccount == null) {
+										
+											document.write('<button class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent" onclick="window.google.identitytoolkit.signIn(null);">Create bookstuf.com Account</button>');
+											
+										} else {
+											document.write('<div class="done">DONE!</div>');
+										}
+									</script>
+								</div>
+							</div>
+							
+							<div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--8-col">
+								<div class="mdl-card__title">
+									<h2 class="mdl-card__title-text">2. Connect to a Stripe account to accept credit card payments</h2>
+								</div>
+								<div class="mdl-card__supporting-text">
+									bookstuf.com works with Stripe to enable you to accept credit card payments from your clients.  In order for you to get paid
+									you will need to create a Stripe account and link it to your bookstuf.com account.  Once you have created your Stripe account 
+									it will bring you back here.
+								</div>
+								<div class="mdl-card__actions">
+									<form id="connect-with-stripe-button" method="get" action="https://connect.stripe.com/oauth/authorize">
+										<input type="hidden" name="response_type" value="code"></input>									
+										<input type="hidden" name="client_id" value="ca_6alXrQKPz1whryd22S7nu6widUhQasz7"></input>		
+										<input type="hidden" name="scope" value="read_write"></input>
+										<button type="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent">Connect with Stripe</button>
+									</form>
+								</div>
+							</div>
+							
+							<div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--8-col">
+								<div class="mdl-card__title">
+									<h2 class="mdl-card__title-text">3. Setup </h2>
+								</div>
+								<div class="mdl-card__supporting-text">
+									bookstuf.com works with Stripe to enable you to accept credit card payments from your clients.  In order for you to get paid
+									you will need to create a Stripe account and link it to your bookstuf.com account.  Once you have created your Stripe account 
+									it will bring you back here.
+								</div>
+								<div class="mdl-card__actions">
+									<form id="connect-with-stripe-button" method="get" action="https://connect.stripe.com/oauth/authorize">
+										<input type="hidden" name="response_type" value="code"></input>									
+										<input type="hidden" name="client_id" value="ca_6alXrQKPz1whryd22S7nu6widUhQasz7"></input>		
+										<input type="hidden" name="scope" value="read_write"></input>
+										<button type="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent">Connect with Stripe</button>
+									</form>
+								</div>
+							</div>
+						</div>
+					</section>
+					<section id="other-section" class="mdl-components__page">
+						<div class="mdl-grid page-content">
+							<div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--8-col">
+								<div class="mdl-card__title">
+									<h2 class="mdl-card__title-text">Other!</h2>
+								</div>
+								<div class="mdl-card__supporting-text">Stuff.</div>
+								<div class="mdl-card__actions">
+									
+								</div>
+							</div>
+						</div>
+					</section>
+				</main>
+				
+			</main>
+		</div>
+	</body>
 </html>

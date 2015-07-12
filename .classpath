@@ -12,5 +12,6 @@
 	<classpathentry kind="lib" path="war/WEB-INF/lib/jsontoken-1.1.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/joda-time-2.8.1.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/json-20140107.jar"/>
+	<classpathentry kind="lib" path="war/WEB-INF/lib/commons-codec-1.10.jar"/>
 	<classpathentry kind="output" path="war/WEB-INF/classes"/>
 </classpath>
