@@ -46,7 +46,7 @@
 	
 	<body>
 		<div class="mdl-layout mdl-js-layout mdl-layout--fixed-drawer mdl-layout--fixed-header">
-			<header class="mdl-layout__header mdl-layout__header--scroll">
+			<header class="mdl-layout__header">
 				<div class="mdl-layout__header-row">
      				<span class="mdl-layout-title">bookstuf.com</span>
 					<div class="mdl-layout-spacer"></div>
@@ -78,7 +78,7 @@
 				<main class="mdl-components__pages">
 					<section id="service-provider-checklist-section" class="mdl-components-index mdl-components__page is-active">
 						<div class="mdl-grid page-content">
-							<div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--8-col">
+							<div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--4-col">
 								<div class="mdl-card__title">
 									<h2 class="mdl-card__title-text">1. Create your bookstuf.com account</h2>
 								</div>
@@ -91,9 +91,8 @@
 										var currentAccount = 
 											JSON.parse(window.localStorage.getItem("gitkit::currentAccount"));
 										
-										if (currentAccount == null) {
-										
-											document.write('<button class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent" onclick="window.google.identitytoolkit.signIn(null);">Create bookstuf.com Account</button>');
+										if (currentAccount == null) {			
+											document.write('<button class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent mdl-js-ripple-effect" onclick="window.google.identitytoolkit.signIn(null);">Create bookstuf.com Account</button>');
 											
 										} else {
 											document.write('<div class="done">DONE!</div>');
@@ -102,7 +101,7 @@
 								</div>
 							</div>
 							
-							<div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--8-col">
+							<div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--4-col">
 								<div class="mdl-card__title">
 									<h2 class="mdl-card__title-text">2. Connect to a Stripe account to accept credit card payments</h2>
 								</div>
@@ -116,34 +115,29 @@
 										<input type="hidden" name="response_type" value="code"></input>									
 										<input type="hidden" name="client_id" value="ca_6alXrQKPz1whryd22S7nu6widUhQasz7"></input>		
 										<input type="hidden" name="scope" value="read_write"></input>
-										<button type="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent">Connect with Stripe</button>
+										<button type="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent mdl-js-ripple-effect">Connect with Stripe</button>
 									</form>
 								</div>
 							</div>
 							
-							<div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--8-col">
+							<div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--4-col">
 								<div class="mdl-card__title">
-									<h2 class="mdl-card__title-text">3. Setup </h2>
+									<h2 class="mdl-card__title-text">3. Setup your service information and availability</h2>
 								</div>
 								<div class="mdl-card__supporting-text">
-									bookstuf.com works with Stripe to enable you to accept credit card payments from your clients.  In order for you to get paid
-									you will need to create a Stripe account and link it to your bookstuf.com account.  Once you have created your Stripe account 
-									it will bring you back here.
+									Your clients need information on what services you provide, where to find you, how to
+									contact you, and when you are available for appointments.  You will need to enter this
+									information before you can start accepting bookings.
 								</div>
 								<div class="mdl-card__actions">
-									<form id="connect-with-stripe-button" method="get" action="https://connect.stripe.com/oauth/authorize">
-										<input type="hidden" name="response_type" value="code"></input>									
-										<input type="hidden" name="client_id" value="ca_6alXrQKPz1whryd22S7nu6widUhQasz7"></input>		
-										<input type="hidden" name="scope" value="read_write"></input>
-										<button type="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent">Connect with Stripe</button>
-									</form>
+									<button class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent mdl-js-ripple-effect">Enter Information</button>
 								</div>
 							</div>
 						</div>
 					</section>
 					<section id="other-section" class="mdl-components__page">
 						<div class="mdl-grid page-content">
-							<div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--8-col">
+							<div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--4-col">
 								<div class="mdl-card__title">
 									<h2 class="mdl-card__title-text">Other!</h2>
 								</div>

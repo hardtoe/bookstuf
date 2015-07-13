@@ -1,24 +1,28 @@
-package com.google.gitkit.samples;
+package com.bookstuf.web;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.Scanner;
 
+import com.google.inject.Singleton;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-public class WidgetServlet extends HttpServlet {
+@Singleton
+public class GitkitWidgetServlet extends HttpServlet {
+	private static final long serialVersionUID = -2012466413430655666L;
+
 	@Override
 	protected void doGet(
-		HttpServletRequest request,
-		HttpServletResponse response
+		final HttpServletRequest request,
+		final HttpServletResponse response
 	) throws ServletException, IOException {
 		response.setContentType("text/html");
 
-		StringBuilder builder = new StringBuilder();
+		final StringBuilder builder = new StringBuilder();
 		String line;
 		try {
 			while ((line = request.getReader().readLine()) != null) {
