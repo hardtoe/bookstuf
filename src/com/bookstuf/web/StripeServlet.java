@@ -6,6 +6,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.inject.Singleton;
 
 import javax.servlet.http.*;
@@ -24,12 +25,12 @@ import com.google.identitytoolkit.GitkitUser;
 @Singleton
 @SuppressWarnings("serial")
 public class StripeServlet extends HttpServlet {
-	private RetryHelper retryHelper;
-	private StripeService stripeService;
+	private Provider<RetryHelper> retryHelper;
+	private Provider<StripeService> stripeService;
 	
 	@Inject StripeServlet(
-		final RetryHelper retryHelper, 
-		final StripeService stripeService
+		final Provider<RetryHelper> retryHelper, 
+		final Provider<StripeService> stripeService
 	) {
 		this.retryHelper = retryHelper;
 		this.stripeService = stripeService;

@@ -5,10 +5,12 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 
 public class BookstufGuiceServletContextListener extends GuiceServletContextListener {
-
-  @Override protected Injector getInjector() {
-    return Guice.createInjector(
-        new BookstufServletModule(),
-        new BookstufLogicModule());
-  }
+	private static final Injector injector = 
+		Guice.createInjector(
+			new BookstufServletModule(),
+			new BookstufLogicModule());
+		
+	@Override protected Injector getInjector() {
+		return injector;
+	}
 }
