@@ -19,7 +19,10 @@ public class GitkitWidgetServlet extends HttpServlet {
 	protected void doGet(
 		final HttpServletRequest request,
 		final HttpServletResponse response
-	) throws ServletException, IOException {
+	) throws
+		ServletException, 
+		IOException 
+	{
 		response.setContentType("text/html");
 
 		final StringBuilder builder = new StringBuilder();

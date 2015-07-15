@@ -4,9 +4,11 @@ import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.servlet.ServletContext;
+
+import com.google.identitytoolkit.GitkitClient;
 import com.google.inject.name.Named;
 import com.google.inject.Singleton;
-
 import com.google.appengine.api.ThreadManager;
 import com.google.appengine.api.datastore.DatastoreTimeoutException;
 import com.google.appengine.api.taskqueue.TransientFailureException;
@@ -23,6 +25,7 @@ public class BookstufLogicModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(URLFetchService.class).toInstance(URLFetchServiceFactory.getURLFetchService());
+		bind(KeyStore.class).to(DevKeyStore.class);
 	}
 
 	@Provides @RequestScoped public ExecutorService getThreadPool() {
@@ -41,5 +44,19 @@ public class BookstufLogicModule extends AbstractModule {
 		retriableExceptions.add(DatastoreTimeoutException.class);
 		
 		return retriableExceptions;
+	}
+	
+	@Provides @Singleton public GitkitClient getGitkitClient(
+		final KeyStore keyStore,
+		final ServletContext context
+	) {
+		return
+			GitkitClient.newBuilder()
+			.setGoogleClientId(keyStore.getGoogleClientId())
+			.setServiceAccountEmail(keyStore.getGoogleServiceAccountEmail())
+			.setKeyStream(context.getResourceAsStream("/WEB-INF/bookstuf-backend-24f631d04e28.p12"))
+			.setWidgetUrl("/gitkit")
+			.setCookieName("gtoken")
+			.build();
 	}
 }

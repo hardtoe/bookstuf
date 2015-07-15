@@ -21,12 +21,53 @@
 				}
 			);
 		</script>
+									
+		<!-- stripe connect button -->		
+		<script type="text/javascript">	
+			$(document).ready(function() {
+				$.getJSON("/user").done(
+					function(data) {
+						var stripeConnectButton =
+							'<form id="connect-with-stripe-button" method="get" action="https://connect.stripe.com/oauth/authorize">' +
+								'<input type="hidden" name="response_type" value="code"></input>' +									
+								'<input type="hidden" name="client_id" value="ca_6alXrQKPz1whryd22S7nu6widUhQasz7"></input>' +		
+								'<input type="hidden" name="scope" value="read_write"></input>' +
+								'<button type="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent mdl-js-ripple-effect">Connect with Stripe</button>' +
+							'</form>';
+						
+						if (data["stripeConnectStatus"] === "CONNECTED") {
+							$('#stripe-actions').html('<div class="done">DONE!</div>');
+							
+						} else if (data["stripeConnectStatus"] === "PENDING") {
+							$('#stripe-actions').html('<div class="pending">PENDING</div>');
+							$('#stripe-actions').append('<p>A transient system issue has prevented your account from being connected immediately.  Your Stripe account connection is currently being processed.  If you refresh the page in 15 minutes and still don\'t see anything give it another try.</p>');
+							$('#stripe-actions').append(stripeConnectButton);
+							
+						} else if (data["stripeConnectStatus"] === "DENIED") {
+							$('#stripe-actions').html('<div class="failed">DENIED</div>');
+							$('#stripe-actions').append('<p>You need to connect to a Stripe account in order to accept credit card payments.</p>');
+							$('#stripe-actions').append(stripeConnectButton);
+							
+						} else if (data["stripeConnectStatus"] === "FAILED") {
+							$('#stripe-actions').html('<div class="failed">FAILED</div>');
+							$('#stripe-actions').append('<p>Connecting to Stripe failed, please try again later.</p>');
+							$('#stripe-actions').append(stripeConnectButton);
+						
+						} else if (data["notLoggedIn"]) {
+							$('#stripe-actions').html('');
+							
+						} else {
+							$('#stripe-actions').html(stripeConnectButton);
+						}
+					});
+			})
+		</script>
 		
 		<!-- material design light -->
 		<link rel="stylesheet" href="https://storage.googleapis.com/code.getmdl.io/1.0.0/material.blue-red.min.css">
 		<script src="https://storage.googleapis.com/code.getmdl.io/1.0.0/material.min.js"></script>
 		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-		<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
 		
 		<!-- custom styles -->
 		<style>
@@ -113,13 +154,10 @@
 									you will need to create a Stripe account and link it to your bookstuf.com account.  Once you have created your Stripe account 
 									it will bring you back here.
 								</div>
-								<div class="mdl-card__actions">
-									<form id="connect-with-stripe-button" method="get" action="https://connect.stripe.com/oauth/authorize">
-										<input type="hidden" name="response_type" value="code"></input>									
-										<input type="hidden" name="client_id" value="ca_6alXrQKPz1whryd22S7nu6widUhQasz7"></input>		
-										<input type="hidden" name="scope" value="read_write"></input>
-										<button type="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent mdl-js-ripple-effect">Connect with Stripe</button>
-									</form>
+								
+								<div id ="stripe-actions" class="mdl-card__actions">
+									<p>Checking current status...</p>	
+
 								</div>
 							</div>
 							

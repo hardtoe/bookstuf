@@ -10,17 +10,15 @@ public class User {
     @Attribute(primaryKey = true)
     private Key key;
     
-    /**
-     * Unique user ID from gitkit.  Must not be null;
-     */
     private String gitkitUserId;
+    private String gitkitUserEmail;
+        
+    private StripeConnectStatus stripeConnectStatus;
+	private String stripeUserId;
+    private String stripePublishableKey;
+    private String stripeAccessToken;
+    private String stripeRefreshToken;
     
-    /**
-     * Stripe Connect Account information.  Null if not connected.
-     */
-    @Attribute(lob = true)
-    private StripeConnectAccount stripeConnectAccount;
-
 	public Key getKey() {
 		return key;
 	}
@@ -36,14 +34,53 @@ public class User {
 	public void setGitkitUserId(String gitkitUserId) {
 		this.gitkitUserId = gitkitUserId;
 	}
-
-	public StripeConnectAccount getStripeConnectAccount() {
-		return stripeConnectAccount;
-	}
-
-	public void setStripeConnectAccount(StripeConnectAccount stripeConnectAccount) {
-		this.stripeConnectAccount = stripeConnectAccount;
-	}
     
+    public StripeConnectStatus getStripeConnectStatus() {
+    	return stripeConnectStatus;
+    }
+    
+    public void setStripeConnectStatus(final StripeConnectStatus stripeConnectStatus) {
+    	this.stripeConnectStatus = stripeConnectStatus;
+    }
+
+	public String getStripeUserId() {
+		return stripeUserId;
+	}
+
+	public void setStripeUserId(String stripeUserId) {
+		this.stripeUserId = stripeUserId;
+	}
+
+	public String getStripePublishableKey() {
+		return stripePublishableKey;
+	}
+
+	public void setStripePublishableKey(String stripePublishableKey) {
+		this.stripePublishableKey = stripePublishableKey;
+	}
+
+	public String getStripeAccessToken() {
+		return stripeAccessToken;
+	}
+
+	public void setStripeAccessToken(String stripeAccessToken) {
+		this.stripeAccessToken = stripeAccessToken;
+	}
+
+	public String getStripeRefreshToken() {
+		return stripeRefreshToken;
+	}
+
+	public void setStripeRefreshToken(String stripeRefreshToken) {
+		this.stripeRefreshToken = stripeRefreshToken;
+	}
+
+	public String getGitkitUserEmail() {
+		return gitkitUserEmail;
+	}
+
+	public void setGitkitUserEmail(String gitkitUserEmail) {
+		this.gitkitUserEmail = gitkitUserEmail;
+	}
     
 }

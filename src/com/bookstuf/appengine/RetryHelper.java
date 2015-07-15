@@ -43,7 +43,23 @@ public class RetryHelper {
 		return retriableExceptions.contains(t.getClass());
 	}
 	
+	public ListenableFuture<Status> postAsync(
+		final String taskName,
+		final Queue queue,
+		final long taskAgeLimitSeconds,
+		final long millisToLeaveInReserve, 
+		final DeferredTask task
+	) {
+		return listeningExecService.submit(new Callable<Status>() {
+			@Override
+			public Status call() throws Exception {
+				return post(taskName, queue, taskAgeLimitSeconds, millisToLeaveInReserve, task);
+			}
+		});
+	}
+	
 	public Status post(
+		final String taskName,
 		final Queue queue,
 		final long taskAgeLimitSeconds,
 		final long millisToLeaveInReserve, 
@@ -83,6 +99,7 @@ public class RetryHelper {
 							queue.add(
 								TaskOptions.Builder
 								.withPayload(task)
+								.taskName(taskName)
 								.retryOptions(retryOptions));
 							
 							return null;

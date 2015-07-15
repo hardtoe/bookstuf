@@ -22,6 +22,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -29,7 +30,9 @@ import java.util.List;
 /**
  * Wrapper class containing user attributes.
  */
-public class GitkitUser {
+public class GitkitUser implements Serializable {
+	private static final long serialVersionUID = 3837399887051378632L;
+	
   private String email;
   private String localId;
   private String name;
@@ -150,8 +153,10 @@ public class GitkitUser {
   /**
    * Wrapper class containing the associated identity providers of a user.
    */
-  public static class ProviderInfo {
-    private final String providerId;
+  public static class ProviderInfo implements Serializable {
+	private static final long serialVersionUID = 4736989048824116866L;
+	
+	private final String providerId;
     private final String federatedId;
     private final String name;
     private final String photoUrl;

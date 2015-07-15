@@ -1,6 +1,7 @@
 package com.bookstuf.external;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.concurrent.Callable;
@@ -9,7 +10,7 @@ import java.util.logging.Logger;
 
 import com.google.inject.Inject;
 import com.google.inject.servlet.RequestScoped;
-import com.bookstuf.datastore.StripeConnectAccount;
+import com.bookstuf.appengine.KeyStore;
 import com.google.appengine.api.urlfetch.HTTPMethod;
 import com.google.appengine.api.urlfetch.HTTPRequest;
 import com.google.appengine.api.urlfetch.HTTPResponse;
@@ -23,38 +24,42 @@ public class StripeService {
 	private final Logger logger;
 	private final URLFetchService urlFetchService;
 	private final ListeningExecutorService listeningExecService;
+	private KeyStore keyStore;
 	
 	private final Gson gson;
 	
 	@Inject StripeService(
 		final Logger logger,
 		final URLFetchService urlFetchService,
-		final ListeningExecutorService listeningExecService
+		final ListeningExecutorService listeningExecService,
+		final KeyStore keyStore
 	) {
 		this.logger = logger;
 		this.urlFetchService = urlFetchService;
 		this.listeningExecService = listeningExecService;
+		this.keyStore = keyStore;
 		
 		this.gson = new Gson();
 	}
 	
-	public ListenableFuture<StripeConnectAccount> connectAccountAsync(
+	public ListenableFuture<StripeConnectAuthorizationResponse> connectAccountAsync(
 		final String authorizationCode
 	) {
-		return listeningExecService.submit(new Callable<StripeConnectAccount>() {
+		return listeningExecService.submit(new Callable<StripeConnectAuthorizationResponse>() {
 			@Override
-			public StripeConnectAccount call() throws Exception {
+			public StripeConnectAuthorizationResponse call() throws Exception {
 				return connectAccount(authorizationCode);
 			}
 		});
 	}
 	
-	public StripeConnectAccount connectAccount(
+	public StripeConnectAuthorizationResponse connectAccount(
 		final String authorizationCode
 	) throws 
 		IOException 
 	{	
 		HTTPRequest stripeTokenRequest;
+		
 		try {
 			stripeTokenRequest = 
 				new HTTPRequest(new URL("https://connect.stripe.com/oauth/token"), HTTPMethod.POST);
@@ -65,8 +70,8 @@ public class StripeService {
 		}
 		
 		stripeTokenRequest.setPayload(
-			("client_id=ca_6alXrQKPz1whryd22S7nu6widUhQasz7&" +
-			"client_secret=sk_test_NkEKdstqaaibV1iTBeH73mGC&" +
+			("client_id=" + keyStore.getStripeClientId() + "&" +
+			"client_secret=" + keyStore.getStripeClientSecret() + "&" +
 			"code=" + authorizationCode + "&" +
 			"grant_type=authorization_code").getBytes());
 		
@@ -79,15 +84,12 @@ public class StripeService {
 		final StripeConnectAuthorizationResponse rsp =
 			gson.fromJson(response, StripeConnectAuthorizationResponse.class);
 		
-		// TODO: handle stripe error
-		
-		final StripeConnectAccount stripeConnectAccount =
-			new StripeConnectAccount(rsp.stripe_user_id, rsp.stripe_publishable_key, rsp.access_token, rsp.refresh_token);
-		
-		return stripeConnectAccount;
+		return rsp;
 	}
 
-	private static class StripeConnectAuthorizationResponse {
+	public static class StripeConnectAuthorizationResponse implements Serializable {
+		private static final long serialVersionUID = -1357690576054586370L;
+		
 		public String access_token;
 		public String refresh_token;
 		public String token_type;
