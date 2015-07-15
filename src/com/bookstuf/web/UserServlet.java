@@ -58,11 +58,11 @@ public class UserServlet extends HttpServlet {
 			response.getWriter().println(userJson);
 		
 		} catch (final NotLoggedInException e) {
-			// not logged in, send back status
 			response.getWriter().println("{\"notLoggedIn\": true}");
 			
 		} catch (final GitkitClientException e) {
 			logger.log(Level.SEVERE, "Could not validate gitkit user.", e);
+			response.getWriter().println("{\"notLoggedIn\": true}");
 		}
 	}
 }

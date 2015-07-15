@@ -75,7 +75,7 @@ public class StripeServlet extends HttpServlet {
 		
 		// TODO: change this to the correct location or embed it into the stripe state
 		resp.setStatus(302);
-		resp.addHeader("Location", "https://www.bookstuf.com/provider-checklist.html");
+		resp.addHeader("Location", "https://www.bookstuf.com/checklist.html");
 
 		try {
 			retryHelper.get().post(

@@ -39,15 +39,17 @@
 									
 		<script type="text/javascript">	
 			$(document).ready(function() {
+				var checkmark = '<img src="check.png" /><span class="status">Done!</span>';
+				
 				// account creation button
 				var currentAccount = 
 					JSON.parse(window.localStorage.getItem("gitkit::currentAccount"));
 				
 				if (currentAccount == null) {	
-					$('#create-account').html('<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect" onclick="window.login()">Create bookstuf.com Account</button>');
+					$('#create-account').html('<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect" onclick="window.login()">Create Account</button>');
 
 				} else {
-					$('#create-account').html('<div class="done">DONE!</div>');
+					$('#create-account').html(checkmark);
 				}
 				
 				
@@ -64,7 +66,7 @@
 							'</form>';
 						
 						if (data["stripeConnectStatus"] === "CONNECTED") {
-							$('#stripe-actions').html('<div class="done">DONE!</div>');
+							$('#stripe-actions').html(checkmark);
 							
 						} else if (data["stripeConnectStatus"] === "PENDING") {
 							$('#stripe-actions').html('<div class="pending">PENDING</div>');
@@ -91,12 +93,22 @@
 						
 						
 						// enter information button
+						// manage bookings button
+						// go live button
+						// Print Fliers button
 						if (data["notLoggedIn"]) {
 							$('#enter-information').html('');
+							$('#manage-bookings').html('');
+							$('#go-live').html('');
+							$('#create-fliers').html('');
 							
 						} else {
+							$('#manage-bookings').html('<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect">Manage Bookings</button>')					
+							$('#go-live').html('<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect">Go Live</button>')
+							$('#create-fliers').html('<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect">Print Fliers</button>')
+							
 							if (data["providerInformationStatus"] == "COMPLETE") {	
-								$('#enter-information').html('<div class="done">DONE!</div>');
+								$('#enter-information').html(checkmark);
 			
 							} else if (data["providerInformationStatus"] == "PARTIAL") {
 								$('#enter-information').html('<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect">Complete Information</button>')
@@ -123,22 +135,30 @@
 		
 		<!-- custom styles -->
 		<style>
-			.done {
-				background-color: #44cc44;
+			.status {
 				/* border-radius:  10px; */
-				padding-left:  10px;
+				padding-left:  15px;
 				padding-right:  10px;
 				padding-top: 2px;
 				padding-bottom:  2px;
 				font-size: large;
 				font-family: Roboto;
 				font-weight: light;
-				color: white;
 			}
 			
 			.checklist-header {
 				color: white;
 				background-color: #3399FF;
+			}
+			
+			.checklist-card {
+				max-width: 90%;
+				width: 500px;
+				min-height: 100px;
+				margin-left: auto;
+				margin-right: auto;		
+				margin-top: 8px;
+				margin-bottom: 8px;
 			}
 		</style>
 		
@@ -146,48 +166,87 @@
 	</head>
 	
 	<body>
-		<div class="mdl-js-layout mdl-layout__content">
-			<div class="mdl-card mdl-shadow--2dp mdl-cell">
-				<div class="mdl-card__title checklist-header">
-					<h2 class="mdl-card__title-text">1. Create your bookstuf.com account</h2>
-				</div>
-				<div class="mdl-card__supporting-text">
-					Sign in to bookstuf.com using an existing account on a supported website or create a new account.  You can use an existing
-					Google, Facebook, Yahoo, Microsoft, or AOL account if you have one.  
-				</div>
-				<div id="create-account" class="mdl-card__actions mdl-card--border">
+		<div class="mdl-card mdl-shadow--2dp checklist-card">
+			<div class="mdl-card__title checklist-header">
+				<h2 class="mdl-card__title-text">1. Create your bookstuf.com account.</h2>
+			</div>
+			<div class="mdl-card__supporting-text">
+				Sign in to bookstuf.com using an existing account on a supported website or create a new account.  You can use an existing
+				Google, Facebook, Yahoo, Microsoft, or AOL account if you have one.
+			</div>
+			<div id="create-account" class="mdl-card__actions mdl-card--border">
 
-				</div>
-			</div>
-			
-			<div class="mdl-card mdl-shadow--2dp mdl-cell">
-				<div class="mdl-card__title checklist-header">
-					<h2 class="mdl-card__title-text">2. Connect to a Stripe account to accept credit card payments</h2>
-				</div>
-				<div class="mdl-card__supporting-text">
-					bookstuf.com works with Stripe to enable you to accept credit card payments from your clients.  In order for you to get paid
-					you will need to create a Stripe account and link it to your bookstuf.com account.  Once you have created your Stripe account 
-					it will bring you back here.
-				</div>
-				
-				<div id="stripe-actions" class="mdl-card__actions mdl-card--border">
-					<div class="mdl-spinner mdl-js-spinner is-active"></div>	
-				</div>
-			</div>
-			
-			<div class="mdl-card mdl-shadow--2dp mdl-cell">
-				<div class="mdl-card__title checklist-header">
-					<h2 class="mdl-card__title-text">3. Setup your service information and availability</h2>
-				</div>
-				<div class="mdl-card__supporting-text">
-					Your clients need information on what services you provide, where to find you, how to
-					contact you, and when you are available for appointments.  You will need to enter this
-					information before you can start accepting bookings.
-				</div>
-				<div id="enter-information" class="mdl-card__actions mdl-card--border">
-					<div class="mdl-spinner mdl-js-spinner is-active"></div>	
-				</div>
 			</div>
 		</div>
-	</body>
+		
+		<div class="mdl-card mdl-shadow--2dp checklist-card">
+			<div class="mdl-card__title checklist-header">
+				<h2 class="mdl-card__title-text">2. Connect to a Stripe account to accept credit card payments.</h2>
+			</div>
+			<div class="mdl-card__supporting-text">
+				bookstuf.com works with Stripe to enable you to accept credit card payments from your clients.  In order for you to get paid
+				you will need to create a Stripe account and link it to your bookstuf.com account.  Once you have created your Stripe account 
+				it will bring you back here.
+			</div>
+			
+			<div id="stripe-actions" class="mdl-card__actions mdl-card--border">
+				<div class="mdl-spinner mdl-js-spinner is-active"></div>	
+			</div>
+		</div>
+		
+		<div class="mdl-card mdl-shadow--2dp checklist-card">
+			<div class="mdl-card__title checklist-header">
+				<h2 class="mdl-card__title-text">3. Setup your service information and availability.</h2>
+			</div>
+			<div class="mdl-card__supporting-text">
+				Your clients need information on what services you provide, where to find you, how to
+				contact you, and when you are available for appointments.  You will need to enter this
+				information before you can start accepting bookings.
+			</div>
+			<div id="enter-information" class="mdl-card__actions mdl-card--border">
+				<div class="mdl-spinner mdl-js-spinner is-active"></div>	
+			</div>
+		</div>
+		
+		<div class="mdl-card mdl-shadow--2dp checklist-card">
+			<div class="mdl-card__title checklist-header">
+				<h2 class="mdl-card__title-text">4. Manage your bookings.</h2>
+			</div>
+			<div class="mdl-card__supporting-text">
+				Users will come to your booking page to check your availability and pick a slot.  You will
+				want to input any existing bookings you have and manage them on an on-going basis.  All of
+				this can be done in the console.  
+			</div>
+			<div id="manage-bookings" class="mdl-card__actions mdl-card--border">
+				<div class="mdl-spinner mdl-js-spinner is-active"></div>	
+			</div>
+		</div>
+		
+		<div class="mdl-card mdl-shadow--2dp checklist-card">
+			<div class="mdl-card__title checklist-header">
+				<h2 class="mdl-card__title-text">5. Go live.</h2>
+			</div>
+			<div class="mdl-card__supporting-text">
+				Once all of your information and current bookings are entered you are ready to go live.
+			</div>
+			<div id="go-live" class="mdl-card__actions mdl-card--border">
+				<div class="mdl-spinner mdl-js-spinner is-active"></div>	
+			</div>
+		</div>
+		
+		<div class="mdl-card mdl-shadow--2dp checklist-card">
+			<div class="mdl-card__title checklist-header">
+				<h2 class="mdl-card__title-text">6. Get the word out!</h2>
+			</div>
+			<div class="mdl-card__supporting-text">
+				You are ready to accept new bookings online at bookstuf.com, let the world know! 
+				Print fliers to get the word out for your services.  We have a template
+				already customized for you with your information.  You can access these fliers at
+				any time from your console.
+			</div>
+			<div id="create-fliers" class="mdl-card__actions mdl-card--border">
+				<div class="mdl-spinner mdl-js-spinner is-active"></div>	
+			</div>
+		</div>
+	</div>
 </html>
