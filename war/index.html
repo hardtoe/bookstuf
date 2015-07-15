@@ -10,6 +10,9 @@
 		<!-- jQuery -->
 		<script src="jquery.js"></script>
 		
+		<!-- JavaScript Cookie -->
+		<script src="cookie.js"></script>
+		
 		<!-- gitkit -->
 		<script type="text/javascript" src="//www.gstatic.com/authtoolkit/js/gitkit.js"></script>
 		<link type=text/css rel=stylesheet href="//www.gstatic.com/authtoolkit/css/gitkit.css" />
@@ -17,9 +20,21 @@
 			window.google.identitytoolkit.setConfig(
 				{
 					widgetUrl:	"https://www.bookstuf.com/gitkit",
-					signOutUrl:	"/",
+					signOutUrl:	"/logout",
 				}
 			);
+			
+			$(document).ready(function() {
+				window.login = function() {
+					Cookies.set('destination', window.location.pathname); 
+					window.google.identitytoolkit.signIn(null);
+				};
+				
+				window.logout = function() {
+					Cookies.set('destination', window.location.pathname); 
+					window.google.identitytoolkit.signOut(null);
+				};
+			});
 		</script>
 									
 		<!-- stripe connect button -->		
@@ -100,10 +115,10 @@
 							JSON.parse(window.localStorage.getItem("gitkit::currentAccount"));
 						
 						if (currentAccount == null) {
-							document.write('<a id="login" href="javascript:void(0)" onclick="window.google.identitytoolkit.signIn(null);" class="mdl-navigation__link mdl-navigation__link--icon"><i style="vertical-align: middle;" class="material-icons" >account_circle</i><span style="padding-left: 5px; vertical-align: middle;">Sign in</span></a>');
+							document.write('<a id="login" href="javascript:void(0)" onclick="window.login()" class="mdl-navigation__link mdl-navigation__link--icon"><i style="vertical-align: middle;" class="material-icons" >account_circle</i><span style="padding-left: 5px; vertical-align: middle;">Sign in</span></a>');
 							
 						} else {
-							document.write('<a id="logout" href="javascript:void(0)" onclick="window.google.identitytoolkit.signOut(null);" class="mdl-navigation__link mdl-navigation__link--icon"><img src="' + JSON.parse(window.localStorage.getItem("gitkit::currentAccount"))["photoUrl"] + '" style="vertical-align: middle; width: 30px; height: 30px; border-radius: 50%;"></img><span style="padding-left: 5px; vertical-align: middle;">Sign out</span></a>');
+							document.write('<a id="logout" href="javascript:void(0)" onclick="window.logout()" class="mdl-navigation__link mdl-navigation__link--icon"><img src="' + JSON.parse(window.localStorage.getItem("gitkit::currentAccount"))["photoUrl"] + '" style="vertical-align: middle; width: 30px; height: 30px; border-radius: 50%;"></img><span style="padding-left: 5px; vertical-align: middle;">Sign out</span></a>');
 						}
 					</script>
 				</div>
@@ -136,7 +151,7 @@
 											JSON.parse(window.localStorage.getItem("gitkit::currentAccount"));
 										
 										if (currentAccount == null) {			
-											document.write('<button class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent mdl-js-ripple-effect" onclick="window.google.identitytoolkit.signIn(null);">Create bookstuf.com Account</button>');
+											document.write('<button class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent mdl-js-ripple-effect" onclick="window.login()">Create bookstuf.com Account</button>');
 											
 										} else {
 											document.write('<div class="done">DONE!</div>');
@@ -156,7 +171,7 @@
 								</div>
 								
 								<div id ="stripe-actions" class="mdl-card__actions">
-									<p>Checking current status...</p>	
+									<div class="mdl-spinner mdl-js-spinner is-active"></div>	
 
 								</div>
 							</div>

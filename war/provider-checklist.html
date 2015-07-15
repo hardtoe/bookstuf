@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		
+		<!-- google apps verification -->
+		<meta name="google-site-verification" content="45XFs0yWCy-YBEDxnEPbVUKylejkI0GjYGYjeYm9aTA" />
+		
+		<!-- jQuery -->
+		<script src="jquery.js"></script>
+		
+		<!-- JavaScript Cookie -->
+		<script src="cookie.js"></script>
+		
+		<!-- gitkit -->
+		<script type="text/javascript" src="//www.gstatic.com/authtoolkit/js/gitkit.js"></script>
+		<link type=text/css rel=stylesheet href="//www.gstatic.com/authtoolkit/css/gitkit.css" />
+		<script type=text/javascript>
+			window.google.identitytoolkit.setConfig(
+				{
+					widgetUrl:	"https://www.bookstuf.com/gitkit",
+					signOutUrl:	"/logout",
+				}
+			);
+			
+			$(document).ready(function() {
+				window.login = function() {
+					Cookies.set('destination', window.location.pathname); 
+					window.google.identitytoolkit.signIn(null);
+				};
+				
+				window.logout = function() {
+					Cookies.set('destination', window.location.pathname); 
+					window.google.identitytoolkit.signOut(null);
+				};
+			});
+		</script>
+									
+		<script type="text/javascript">	
+			$(document).ready(function() {
+				// account creation button
+				var currentAccount = 
+					JSON.parse(window.localStorage.getItem("gitkit::currentAccount"));
+				
+				if (currentAccount == null) {	
+					$('#create-account').html('<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect" onclick="window.login()">Create bookstuf.com Account</button>');
+
+				} else {
+					$('#create-account').html('<div class="done">DONE!</div>');
+				}
+				
+				
+				
+				$.getJSON("/user").done(
+					function(data) {
+						// stripe connect button
+						var stripeConnectButton =
+							'<form id="connect-with-stripe-button" method="get" action="https://connect.stripe.com/oauth/authorize">' +
+								'<input type="hidden" name="response_type" value="code"></input>' +									
+								'<input type="hidden" name="client_id" value="ca_6alXrQKPz1whryd22S7nu6widUhQasz7"></input>' +		
+								'<input type="hidden" name="scope" value="read_write"></input>' +
+								'<button type="submit" class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect">Connect with Stripe</button>' +
+							'</form>';
+						
+						if (data["stripeConnectStatus"] === "CONNECTED") {
+							$('#stripe-actions').html('<div class="done">DONE!</div>');
+							
+						} else if (data["stripeConnectStatus"] === "PENDING") {
+							$('#stripe-actions').html('<div class="pending">PENDING</div>');
+							$('#stripe-actions').append('<p>A transient system issue has prevented your account from being connected immediately.  Your Stripe account connection is currently being processed.  If you refresh the page in 15 minutes and still don\'t see anything give it another try.</p>');
+							$('#stripe-actions').append(stripeConnectButton);
+							
+						} else if (data["stripeConnectStatus"] === "DENIED") {
+							$('#stripe-actions').html('<div class="failed">DENIED</div>');
+							$('#stripe-actions').append('<p>You need to connect to a Stripe account in order to accept credit card payments.</p>');
+							$('#stripe-actions').append(stripeConnectButton);
+							
+						} else if (data["stripeConnectStatus"] === "FAILED") {
+							$('#stripe-actions').html('<div class="failed">FAILED</div>');
+							$('#stripe-actions').append('<p>Connecting to Stripe failed, please try again later.</p>');
+							$('#stripe-actions').append(stripeConnectButton);
+						
+						} else if (data["notLoggedIn"]) {
+							$('#stripe-actions').html('');
+							
+						} else {
+							$('#stripe-actions').html(stripeConnectButton);
+						}
+						
+						
+						
+						// enter information button
+						if (data["notLoggedIn"]) {
+							$('#enter-information').html('');
+							
+						} else {
+							if (data["providerInformationStatus"] == "COMPLETE") {	
+								$('#enter-information').html('<div class="done">DONE!</div>');
+			
+							} else if (data["providerInformationStatus"] == "PARTIAL") {
+								$('#enter-information').html('<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect">Complete Information</button>')
+	
+							} else {
+								$('#enter-information').html('<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect">Enter Information</button>')
+							}
+						}
+					});
+			})
+			
+
+					
+			
+		</script>
+		
+		
+		
+		<!-- material design light -->
+		<link rel="stylesheet" href="https://storage.googleapis.com/code.getmdl.io/1.0.0/material.blue-red.min.css">
+		<script src="https://storage.googleapis.com/code.getmdl.io/1.0.0/material.min.js"></script>
+		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
+		
+		<!-- custom styles -->
+		<style>
+			.done {
+				background-color: #44cc44;
+				/* border-radius:  10px; */
+				padding-left:  10px;
+				padding-right:  10px;
+				padding-top: 2px;
+				padding-bottom:  2px;
+				font-size: large;
+				font-family: Roboto;
+				font-weight: light;
+				color: white;
+			}
+			
+			.checklist-header {
+				color: white;
+				background-color: #3399FF;
+			}
+		</style>
+		
+		<title>bookstuf.com</title>
+	</head>
+	
+	<body>
+		<div class="mdl-js-layout mdl-layout__content">
+			<div class="mdl-card mdl-shadow--2dp mdl-cell">
+				<div class="mdl-card__title checklist-header">
+					<h2 class="mdl-card__title-text">1. Create your bookstuf.com account</h2>
+				</div>
+				<div class="mdl-card__supporting-text">
+					Sign in to bookstuf.com using an existing account on a supported website or create a new account.  You can use an existing
+					Google, Facebook, Yahoo, Microsoft, or AOL account if you have one.  
+				</div>
+				<div id="create-account" class="mdl-card__actions mdl-card--border">
+
+				</div>
+			</div>
+			
+			<div class="mdl-card mdl-shadow--2dp mdl-cell">
+				<div class="mdl-card__title checklist-header">
+					<h2 class="mdl-card__title-text">2. Connect to a Stripe account to accept credit card payments</h2>
+				</div>
+				<div class="mdl-card__supporting-text">
+					bookstuf.com works with Stripe to enable you to accept credit card payments from your clients.  In order for you to get paid
+					you will need to create a Stripe account and link it to your bookstuf.com account.  Once you have created your Stripe account 
+					it will bring you back here.
+				</div>
+				
+				<div id="stripe-actions" class="mdl-card__actions mdl-card--border">
+					<div class="mdl-spinner mdl-js-spinner is-active"></div>	
+				</div>
+			</div>
+			
+			<div class="mdl-card mdl-shadow--2dp mdl-cell">
+				<div class="mdl-card__title checklist-header">
+					<h2 class="mdl-card__title-text">3. Setup your service information and availability</h2>
+				</div>
+				<div class="mdl-card__supporting-text">
+					Your clients need information on what services you provide, where to find you, how to
+					contact you, and when you are available for appointments.  You will need to enter this
+					information before you can start accepting bookings.
+				</div>
+				<div id="enter-information" class="mdl-card__actions mdl-card--border">
+					<div class="mdl-spinner mdl-js-spinner is-active"></div>	
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
