@@ -19,6 +19,9 @@ public class User {
     private String stripeAccessToken;
     private String stripeRefreshToken;
     
+    private ProviderInformationStatus providerInformationStatus;
+    private Key providerInformationKey;
+    
 	public Key getKey() {
 		return key;
 	}
@@ -82,5 +85,20 @@ public class User {
 	public void setGitkitUserEmail(String gitkitUserEmail) {
 		this.gitkitUserEmail = gitkitUserEmail;
 	}
-    
+
+	public ProviderInformationStatus getProviderInformationStatus() {
+		return providerInformationStatus;
+	}
+
+	public void setProviderInformationStatus(ProviderInformationStatus providerInformationStatus) {
+		this.providerInformationStatus = providerInformationStatus;
+	}
+
+	public Key getProviderInformationKey() {
+		return providerInformationKey;
+	}
+
+	public void setProviderInformationKey(Key providerInformationKey) {
+		this.providerInformationKey = providerInformationKey;
+	}
 }

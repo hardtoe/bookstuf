@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		
+		<!-- google apps verification -->
+		<meta name="google-site-verification" content="45XFs0yWCy-YBEDxnEPbVUKylejkI0GjYGYjeYm9aTA" />
+		
+		<!-- jQuery -->
+		<script src="jquery.js"></script>
+		
+		<!-- JavaScript Cookie -->
+		<script src="cookie.js"></script>
+		
+		<!-- gitkit -->
+		<script type="text/javascript" src="//www.gstatic.com/authtoolkit/js/gitkit.js"></script>
+		<link type=text/css rel=stylesheet href="//www.gstatic.com/authtoolkit/css/gitkit.css" />
+		<script type=text/javascript>
+			window.google.identitytoolkit.setConfig(
+				{
+					widgetUrl:	"https://www.bookstuf.com/gitkit",
+					signOutUrl:	"/logout",
+				}
+			);
+			
+			// login/logout with destination
+			$(document).ready(function() {
+				window.login = function() {
+					Cookies.set('destination', window.location.pathname); 
+					window.google.identitytoolkit.signIn(null);
+				};
+				
+				window.logout = function() {
+					Cookies.set('destination', window.location.pathname); 
+					window.google.identitytoolkit.signOut(null);
+				};
+			});
+			
+			// sidebar navigation
+			$(document).ready(function() {
+				$('section[id$=section]').hide();
+				
+				if (window.location.hash === '') {
+					$('#calendar-section').show();
+				} else {
+					$(window.location.hash).show();
+				}
+				
+				$('.mdl-navigation__link').click(function(){
+			        $('section[id$=section]').hide();
+			        
+			        var url = this.href; 
+			        var idx = url.indexOf("#");
+			        var hash = idx != -1 ? url.substring(idx) : "";
+			        
+			        $(hash).show();
+			        return true;
+			    });
+			});
+		</script>
+			
+		
+		<!-- material design light -->
+		<link rel="stylesheet" href="https://storage.googleapis.com/code.getmdl.io/1.0.0/material.blue-red.min.css">
+		<script src="https://storage.googleapis.com/code.getmdl.io/1.0.0/material.min.js"></script>
+		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
+		
+		<!-- custom styles -->
+		<style>
+			.done {
+				background-color: #44cc44;
+				/* border-radius:  10px; */
+				padding-left:  10px;
+				padding-right:  10px;
+				padding-top: 2px;
+				padding-bottom:  2px;
+				font-size: large;
+				font-family: Roboto;
+				font-weight: light;
+				color: white;
+			}
+			
+			.console-page {
+				max-width: 90%;
+				width: 500px;
+				margin-left: 25px;	
+				margin-top: 8px;
+				margin-bottom: 8px;
+			}
+			
+			.input-field {
+			    display: block;
+		    }
+			
+			.input-copy {
+			    margin: 0 auto;
+			    width: 600px;
+			    height: auto;
+			    background: gray;
+			    display: block;
+		    }
+		</style>
+		
+		<title>bookstuf.com - console</title>
+	</head>
+	
+	<body>
+		<div class="mdl-layout mdl-js-layout mdl-layout--fixed-drawer mdl-layout--fixed-header">
+			<header class="mdl-layout__header">
+				<div class="mdl-layout__header-row">
+     				<span class="mdl-layout-title">console</span>
+					<div class="mdl-layout-spacer"></div>
+					
+					<script type="text/javascript">
+						var currentAccount = 
+							JSON.parse(window.localStorage.getItem("gitkit::currentAccount"));
+						
+						if (currentAccount == null) {
+							document.write('<a id="login" href="javascript:void(0)" onclick="window.login()" class="mdl-navigation__link mdl-navigation__link--icon"><i style="vertical-align: middle;" class="material-icons" >account_circle</i><span style="padding-left: 5px; vertical-align: middle;">Sign in</span></a>');
+							
+						} else {
+							document.write('<a id="logout" href="javascript:void(0)" onclick="window.logout()" class="mdl-navigation__link mdl-navigation__link--icon"><img src="' + JSON.parse(window.localStorage.getItem("gitkit::currentAccount"))["photoUrl"] + '" style="vertical-align: middle; width: 30px; height: 30px; border-radius: 50%;"></img><span style="padding-left: 5px; vertical-align: middle;">Sign out</span></a>');
+						}
+					</script>
+				</div>
+			</header>
+			
+			<div class="mdl-layout__drawer">
+				<span class="mdl-layout-title">bookstuf.com</span>
+				<nav class="mdl-navigation">
+					<a class="mdl-navigation__link" href="#calendar-section">Calendar</a>
+					<a class="mdl-navigation__link" href="#information-section">Information</a>
+					<a class="mdl-navigation__link" href="#services-section">Services</a>
+					<a class="mdl-navigation__link" href="#fliers-section">Fliers</a>
+					<a class="mdl-navigation__link" href="checklist.html">Account Checklist</a>
+				</nav>
+			</div>
+			
+			<main class="mdl-layout__content">
+				<section id="calendar-section" class="console-page">
+					1
+				</section>
+				
+				<section id="services-section" class="console-page">
+					<form>
+						<h4>Services</h4>
+						<div class="input-group">
+							<div class="input-field">
+								<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+									<textarea class="mdl-textfield__input" type="text" rows="3" id="aboutServices" ></textarea>
+									<label class="mdl-textfield__label" for="aboutServices">Summary of Services</label>
+								</div>
+							</div>
+							<div class="input-copy">
+								<p></p>
+							</div>
+						</div><br />
+						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+							<textarea class="mdl-textfield__input" type="text" rows="2" id="address" ></textarea>
+							<label class="mdl-textfield__label" for="address">Address of Services</label>
+						</div><br />
+						
+						<h5>Credit Card Charge Policy</h5>
+						<label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="chargePolicy-1">
+							<input type="radio" id="chargePolicy-1" class="mdl-radio__button" name="chargePolicy" value="CHARGE_AFTER" checked />
+							<span class="mdl-radio__label">Charge after service</span>
+						</label><br />
+						<label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="chargePolicy-2">
+							<input type="radio" id="chargePolicy-2" class="mdl-radio__button" name="chargePolicy" value="CHARGE_IMMEDIATELY" />
+							<span class="mdl-radio__label">Charge immediately</span>
+						</label><br />
+						
+						<h5>Cancellation Policy</h5>
+						<label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="cancellationPolicy-1">
+							<input type="radio" id="cancellationPolicy-1" class="mdl-radio__button" name="cancellationPolicy" value="REFUND_IF_CANCEL_IN_TIME" checked />
+							<span class="mdl-radio__label">No payment due if cancelled a number of hours before appointment starts</span><br />
+							<div class="mdl-textfield mdl-js-textfield  mdl-textfield--floating-label">
+								<input class="mdl-textfield__input" type="text" pattern="[0-9]+" id="cancellationDeadline" value="24" />
+								<label class="mdl-textfield__label" for="sample2">Hours before appointment starts</label>
+								<span class="mdl-textfield__error">Not a whole number</span>
+							</div>
+						</label><br />
+						<label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="cancellationPolicy-2">
+							<input type="radio" id="cancellationPolicy-2" class="mdl-radio__button" name="cancellationPolicy" value="NEVER_REFUND" />
+							<span class="mdl-radio__label">No payment due if cancelled at any time</span>
+						</label><br />
+						<label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="cancellationPolicy-3">
+							<input type="radio" id="cancellationPolicy-3" class="mdl-radio__button" name="cancellationPolicy" value="ALWAYS_REFUND" />
+							<span class="mdl-radio__label">Payment is always due regardless of cancellation</span>
+						</label><br />
+							
+						<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect">Save</button>
+					</form>
+				</section>
+
+				<section id="information-section" class="console-page">
+					<form>
+						<h4>Information</h4>
+						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+							<input class="mdl-textfield__input" type="text" id="firstName" /> 
+							<label class="mdl-textfield__label" for="firstName">First Name</label>
+						</div><br />
+						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+							<input class="mdl-textfield__input" type="text" id="lastName" /> 
+							<label class="mdl-textfield__label" for="lastName">Last Name</label>
+						</div><br />
+						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+							<input class="mdl-textfield__input" type="text" id="handle" /> 
+							<label class="mdl-textfield__label" for="handle">Handle</label>
+						</div><br />
+						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+							<input class="mdl-textfield__input" type="text" id="phoneNumber" ></textarea>
+							<label class="mdl-textfield__label" for="aboutMe">Phone Number</label>
+						</div><br />
+						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+							<input class="mdl-textfield__input" type="text" id="contactEmail" ></textarea>
+							<label class="mdl-textfield__label" for="aboutMe">Email Address</label>
+						</div><br />
+						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+							<textarea class="mdl-textfield__input" type="text" rows="3" id="aboutMe" ></textarea>
+							<label class="mdl-textfield__label" for="aboutMe">About Myself</label>
+						</div><br />
+						
+						<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect">Save</button>
+					</form>
+				</section>
+
+				<section id="fliers-section" class="console-page">
+					4
+				</section>
+			</main>
+		</div>
+	</body>
+</html>
