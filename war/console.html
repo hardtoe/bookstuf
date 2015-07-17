@@ -132,6 +132,7 @@
 				<nav class="mdl-navigation">
 					<a class="mdl-navigation__link" href="#calendar-section">Calendar</a>
 					<a class="mdl-navigation__link" href="#information-section">Information</a>
+					<a class="mdl-navigation__link" href="#pictures-section">Profile Pictures</a>
 					<a class="mdl-navigation__link" href="#services-section">Services</a>
 					<a class="mdl-navigation__link" href="#fliers-section">Fliers</a>
 					<a class="mdl-navigation__link" href="checklist.html">Account Checklist</a>
@@ -176,11 +177,11 @@
 						<label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="cancellationPolicy-1">
 							<input type="radio" id="cancellationPolicy-1" class="mdl-radio__button" name="cancellationPolicy" value="REFUND_IF_CANCEL_IN_TIME" checked />
 							<span class="mdl-radio__label">No payment due if cancelled a number of hours before appointment starts</span><br />
-							<div class="mdl-textfield mdl-js-textfield  mdl-textfield--floating-label">
+							<span class="mdl-textfield mdl-js-textfield  mdl-textfield--floating-label">
 								<input class="mdl-textfield__input" type="text" pattern="[0-9]+" id="cancellationDeadline" value="24" />
-								<label class="mdl-textfield__label" for="sample2">Hours before appointment starts</label>
+								<span class="mdl-textfield__label" for="sample2">Hours before appointment starts</span>
 								<span class="mdl-textfield__error">Not a whole number</span>
-							</div>
+							</span>
 						</label><br />
 						<label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="cancellationPolicy-2">
 							<input type="radio" id="cancellationPolicy-2" class="mdl-radio__button" name="cancellationPolicy" value="NEVER_REFUND" />
@@ -196,7 +197,7 @@
 				</section>
 
 				<section id="information-section" class="console-page">
-					<form>
+					<form enctype="multipart/form-data">
 						<h4>Information</h4>
 						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
 							<input class="mdl-textfield__input" type="text" id="firstName" /> 
@@ -227,8 +228,12 @@
 					</form>
 				</section>
 
+				<section id="pictures-section" class="console-page">
+					pictures
+				</section>
+
 				<section id="fliers-section" class="console-page">
-					4
+					fliers
 				</section>
 			</main>
 		</div>

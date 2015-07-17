@@ -52,13 +52,8 @@ public class LoginServlet extends HttpServlet {
 			
 			if (gitkitUser == null) {
 				response.addCookie(new Cookie("gtoken", ""));
-			
-			} else {
-				userService.getCurrentUser(gitkitUser);
+				logger.log(Level.WARNING, "LoginServlet accessed with invalid gtoken.");
 			}
-		
-		} catch (final NotLoggedInException e) {
-			logger.log(Level.WARNING, "LoginServlet accessed with invalid gtoken..", e);
 			
 		} catch (final GitkitClientException e) {
 			logger.log(Level.SEVERE, "Could not validate gitkit user.", e);
