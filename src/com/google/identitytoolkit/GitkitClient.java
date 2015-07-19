@@ -34,6 +34,7 @@ import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.servlet.http.Cookie;
@@ -115,14 +116,28 @@ public class GitkitClient {
    * @throws GitkitClientException if token has invalid signature
    */
   public JsonObject validateTokenToJson(String token) throws GitkitClientException {
-    if (token == null) {
-      return null;
-    }
-    try {
-      return tokenHelper.verifyAndDeserialize(token).getPayloadAsJsonObject();
-    } catch (SignatureException e) {
-      throw new GitkitClientException(e);
-    }
+	  if (token == null) {
+		  return null;
+	  }
+
+	  int retry = 10;
+
+	  while (true) {
+		  try {
+			  return tokenHelper.verifyAndDeserialize(token).getPayloadAsJsonObject();
+
+		  } catch (SignatureException e) {
+			  if (retry < 0) {
+				  logger.log(Level.SEVERE, "Could not validate gitkit token after 10 tries!", e);
+				  throw new GitkitClientException(e);
+				  
+			  } else {
+				  logger.log(Level.WARNING, "Retrying gitkit token validation after SignatureException.", e);
+			  }
+			  
+			  retry--;			  
+		  }
+	  }
   }
 
   /**

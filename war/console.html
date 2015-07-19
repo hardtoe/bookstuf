@@ -58,6 +58,73 @@
 			        return true;
 			    });
 			});
+		
+			// form data load and save
+			$(function() {
+				$("form").each(function(index) {
+					var form = $(this);
+					
+					// load data
+					if (form.attr("data-source") != null) {
+						$.get(form.attr("data-source"))
+							.done(function(data) {
+								var json = JSON.parse(data);
+								
+								form.find('input[type=text], textarea').each(function(index) {
+									var input = $(this);
+									var value = json[input.attr("id")];
+									
+									if (value) {
+										input.val(value);
+										input.parent().addClass("is-dirty");
+									}
+								});
+
+								form.find('label.mdl-radio').each(function(index) {
+									var label = $(this);
+									var input = label.find('input[type=radio]');
+									var value = json[input.attr("name")];
+									
+									if (value) {
+										if (value === input.attr("value")) {
+											label.click();
+										}
+									}
+								});
+									
+							});
+					}
+					
+					// save data
+					if (form.attr("data-destination") != null) {	
+						form.find('.save-button').click(function() {
+							var data = {};
+							
+							form.find("input[type=text], textarea").each(function(index) {
+								var input = $(this);	
+								data[input.attr("id")] = input.val();
+							});
+							
+							form.find("label.mdl-radio.is-checked").each(function(index) {
+								var label = $(this);	
+								var input = label.find('input[type=radio]');
+								data[input.attr("name")] = input.val();
+							});
+							
+							$.ajax({
+								type: "POST",
+								url: form.attr("data-destination"),
+								data: JSON.stringify(data),
+								dataType: "json"
+							}).done(function(rsp) {
+								
+							});
+							
+							return false;
+						});
+					}
+				});
+			});
 		</script>
 			
 		
@@ -145,7 +212,7 @@
 				</section>
 				
 				<section id="services-section" class="console-page">
-					<form>
+					<form data-destination="/user/setUserServices" data-source="/user/getUserServices">
 						<h4>Services</h4>
 						<div class="input-group">
 							<div class="input-field">
@@ -192,12 +259,12 @@
 							<span class="mdl-radio__label">Payment is always due regardless of cancellation</span>
 						</label><br />
 							
-						<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect">Save</button>
+						<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect save-button">Save</button>
 					</form>
 				</section>
 
 				<section id="information-section" class="console-page">
-					<form enctype="multipart/form-data">
+					<form data-destination="/user/setUserInformation" data-source="/user/getUserInformation">
 						<h4>Information</h4>
 						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
 							<input class="mdl-textfield__input" type="text" id="firstName" /> 
@@ -224,7 +291,7 @@
 							<label class="mdl-textfield__label" for="aboutMe">About Myself</label>
 						</div><br />
 						
-						<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect">Save</button>
+						<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect save-button">Save</button>
 					</form>
 				</section>
 

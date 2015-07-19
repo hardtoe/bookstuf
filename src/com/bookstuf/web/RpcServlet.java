@@ -106,7 +106,7 @@ public abstract class RpcServlet extends HttpServlet {
 		
 		if (path != null && path.length > 0) {
 			final String resource =
-				path[path.length - 1];
+				path[1];
 			
 			if (methods.containsKey(resource)) {
 				final Method m =
@@ -199,9 +199,6 @@ public abstract class RpcServlet extends HttpServlet {
 	) {
 		final Object[] args = 
 			new Object[m.getParameterTypes().length];
-		
-		final Map<String, String> parameters =
-			request.getParameterMap();
 
 		final Annotation[][] parameterAnnotations =
 			m.getParameterAnnotations();
@@ -216,7 +213,7 @@ public abstract class RpcServlet extends HttpServlet {
 					getParamAnnotation(Param.class, parameterAnnotations[i]);
 				
 				args[i] =
-					fromString(parameterTypes[i], parameters.get(paramAnnotation.value()));				
+					fromString(parameterTypes[i], request.getParameter(paramAnnotation.value()));				
 			
 			} else if (getParamAnnotation(RequestBody.class, parameterAnnotations[i]) != null) {
 				try {

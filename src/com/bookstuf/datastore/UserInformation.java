@@ -3,14 +3,18 @@ package com.bookstuf.datastore;
 import org.slim3.datastore.Attribute;
 import org.slim3.datastore.Model;
 
+import com.bookstuf.PublicReadOnly;
 import com.google.appengine.api.datastore.Key;
 
 @Model
 public class UserInformation {
     @Attribute(primaryKey = true)
+    @PublicReadOnly
     private Key key;
-    
+
+    @PublicReadOnly
     private String gitkitUserId;
+    
     private String handle;
     
     private String firstName;

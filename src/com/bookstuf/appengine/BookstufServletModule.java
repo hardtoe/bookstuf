@@ -13,7 +13,7 @@ class BookstufServletModule extends ServletModule {
 		serve("/gitkit").with(GitkitWidgetServlet.class);
 		serve("/login").with(LoginServlet.class);
 		serve("/logout").with(LogoutServlet.class);
-		serve("/user").with(UserServlet.class);
+		serve("/user/*").with(UserServlet.class);
 		serve("/stripe").with(StripeServlet.class);
 	}
 }

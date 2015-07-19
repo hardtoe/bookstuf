@@ -10,6 +10,7 @@ import com.bookstuf.datastore.User;
 import com.bookstuf.datastore.UserInformation;
 import com.bookstuf.datastore.UserInformationMeta;
 import com.bookstuf.datastore.UserMeta;
+import com.bookstuf.datastore.UserServices;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Transaction;
@@ -69,5 +70,30 @@ public class UserService implements Serializable {
 		}
 		
 		return userInformation;
+	}
+
+	public UserServices getCurrentUserServices(
+		final GitkitUser gitkitUser, 
+		final Transaction transaction
+	) throws 
+		NotLoggedInException 
+	{
+		if (gitkitUser == null) {
+			throw new NotLoggedInException();
+		}
+		
+		UserServices userServices =
+			DatastoreHelper.getInstanceByProperty(
+				transaction, 
+				UserServices.class, 
+				"gitkitUserId", 
+				gitkitUser.getLocalId());
+		
+		if (userServices == null) {
+			userServices = new UserServices();
+			userServices.setGitkitUserId(gitkitUser.getLocalId());
+		}
+		
+		return userServices;
 	}
 }
