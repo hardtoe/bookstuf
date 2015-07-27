@@ -1,0 +1,52 @@
+.done {
+	background-color: #44cc44;
+	/* border-radius:  10px; */
+	padding-left: 10px;
+	padding-right: 10px;
+	padding-top: 2px;
+	padding-bottom: 2px;
+	font-size: large;
+	font-family: Roboto;
+	font-weight: light;
+	color: white;
+}
+
+.console-page {
+	max-width: 90%;
+	width: 500px;
+	margin-left: 25px;
+	margin-top: 8px;
+	margin-bottom: 8px;
+}
+
+.input-field {
+	display: block;
+}
+
+.input-copy {
+	margin: 0 auto;
+	width: 600px;
+	height: auto;
+	background: gray;
+	display: block;
+}
+
+.form-status {
+	
+}
+
+.form-loading {
+	content: "Loading...";
+}
+
+.form-idle {
+	
+}
+
+.form-saving {
+	content: "Saving...";
+}
+
+.form-saved {
+	content: "Saved!";
+}
