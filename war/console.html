@@ -4,171 +4,26 @@
 		<meta http-equiv="content-type" content="text/html; charset=UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		
-		<!-- google apps verification -->
-		<meta name="google-site-verification" content="45XFs0yWCy-YBEDxnEPbVUKylejkI0GjYGYjeYm9aTA" />
-		
 		<!-- jQuery -->
-		<script src="jquery.js"></script>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
 		
 		<!-- JavaScript Cookie -->
 		<script src="cookie.js"></script>
 		
 		<!-- gitkit -->
-		<script type="text/javascript" src="//www.gstatic.com/authtoolkit/js/gitkit.js"></script>
-		<link type=text/css rel=stylesheet href="//www.gstatic.com/authtoolkit/css/gitkit.css" />
-		<script type=text/javascript>
-			window.google.identitytoolkit.setConfig(
-				{
-					widgetUrl:	"https://www.bookstuf.com/gitkit",
-					signOutUrl:	"/logout",
-				}
-			);
-			
-			// login/logout with destination
-			$(document).ready(function() {
-				window.login = function() {
-					Cookies.set('destination', window.location.pathname); 
-					window.google.identitytoolkit.signIn(null);
-				};
-				
-				window.logout = function() {
-					Cookies.set('destination', window.location.pathname); 
-					window.google.identitytoolkit.signOut(null);
-				};
-			});
-			
-			// sidebar navigation
-			$(document).ready(function() {
-				$('section[id$=section]').hide();
-				
-				if (window.location.hash === '') {
-					$('#calendar-section').show();
-				} else {
-					$(window.location.hash).show();
-				}
-				
-				$('.mdl-navigation__link').click(function(){
-			        $('section[id$=section]').hide();
-			        
-			        var url = this.href; 
-			        var idx = url.indexOf("#");
-			        var hash = idx != -1 ? url.substring(idx) : "";
-			        
-			        $(hash).show();
-			        return true;
-			    });
-			});
-		
-			// form data load and save
-			$(function() {
-				$("form").each(function(index) {
-					var form = $(this);
-					
-					// load data
-					if (form.attr("data-source") != null) {
-						$.get(form.attr("data-source"))
-							.done(function(data) {
-								var json = JSON.parse(data);
-								
-								form.find('input[type=text], textarea').each(function(index) {
-									var input = $(this);
-									var value = json[input.attr("id")];
-									
-									if (value) {
-										input.val(value);
-										input.parent().addClass("is-dirty");
-									}
-								});
+		<script type="text/javascript" src="https://www.gstatic.com/authtoolkit/js/gitkit.js"></script>
+		<link type=text/css rel=stylesheet href="https://www.gstatic.com/authtoolkit/css/gitkit.css" />
 
-								form.find('label.mdl-radio').each(function(index) {
-									var label = $(this);
-									var input = label.find('input[type=radio]');
-									var value = json[input.attr("name")];
-									
-									if (value) {
-										if (value === input.attr("value")) {
-											label.click();
-										}
-									}
-								});
-									
-							});
-					}
-					
-					// save data
-					if (form.attr("data-destination") != null) {	
-						form.find('.save-button').click(function() {
-							var data = {};
-							
-							form.find("input[type=text], textarea").each(function(index) {
-								var input = $(this);	
-								data[input.attr("id")] = input.val();
-							});
-							
-							form.find("label.mdl-radio.is-checked").each(function(index) {
-								var label = $(this);	
-								var input = label.find('input[type=radio]');
-								data[input.attr("name")] = input.val();
-							});
-							
-							$.ajax({
-								type: "POST",
-								url: form.attr("data-destination"),
-								data: JSON.stringify(data),
-								dataType: "json"
-							}).done(function(rsp) {
-								
-							});
-							
-							return false;
-						});
-					}
-				});
-			});
-		</script>
+		<!-- bookstuf -->
+		<script type="text/javascript" src="bookstuf.js"></script>
+		<link type=text/css rel=stylesheet href="bookstuf.css" />
 			
-		
 		<!-- material design light -->
 		<link rel="stylesheet" href="https://storage.googleapis.com/code.getmdl.io/1.0.0/material.blue-red.min.css">
 		<script src="https://storage.googleapis.com/code.getmdl.io/1.0.0/material.min.js"></script>
 		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
-		
-		<!-- custom styles -->
-		<style>
-			.done {
-				background-color: #44cc44;
-				/* border-radius:  10px; */
-				padding-left:  10px;
-				padding-right:  10px;
-				padding-top: 2px;
-				padding-bottom:  2px;
-				font-size: large;
-				font-family: Roboto;
-				font-weight: light;
-				color: white;
-			}
-			
-			.console-page {
-				max-width: 90%;
-				width: 500px;
-				margin-left: 25px;	
-				margin-top: 8px;
-				margin-bottom: 8px;
-			}
-			
-			.input-field {
-			    display: block;
-		    }
-			
-			.input-copy {
-			    margin: 0 auto;
-			    width: 600px;
-			    height: auto;
-			    background: gray;
-			    display: block;
-		    }
-		</style>
+
 		
 		<title>bookstuf.com - console</title>
 	</head>
@@ -214,10 +69,11 @@
 				<section id="services-section" class="console-page">
 					<form data-destination="/user/setUserServices" data-source="/user/getUserServices">
 						<h4>Services</h4>
+						<div class="form-status"></div>
 						<div class="input-group">
 							<div class="input-field">
 								<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-									<textarea class="mdl-textfield__input" type="text" rows="3" id="aboutServices" ></textarea>
+									<textarea class="mdl-textfield__input" type="text" rows="3" id="aboutServices" disabled></textarea>
 									<label class="mdl-textfield__label" for="aboutServices">Summary of Services</label>
 								</div>
 							</div>
@@ -226,72 +82,75 @@
 							</div>
 						</div><br />
 						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-							<textarea class="mdl-textfield__input" type="text" rows="2" id="address" ></textarea>
+							<textarea class="mdl-textfield__input" type="text" rows="2" id="address" disabled></textarea>
 							<label class="mdl-textfield__label" for="address">Address of Services</label>
 						</div><br />
 						
 						<h5>Credit Card Charge Policy</h5>
 						<label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="chargePolicy-1">
-							<input type="radio" id="chargePolicy-1" class="mdl-radio__button" name="chargePolicy" value="CHARGE_AFTER" checked />
+							<input type="radio" id="chargePolicy-1" class="mdl-radio__button" name="chargePolicy" value="CHARGE_AFTER" checked disabled />
 							<span class="mdl-radio__label">Charge after service</span>
 						</label><br />
 						<label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="chargePolicy-2">
-							<input type="radio" id="chargePolicy-2" class="mdl-radio__button" name="chargePolicy" value="CHARGE_IMMEDIATELY" />
+							<input type="radio" id="chargePolicy-2" class="mdl-radio__button" name="chargePolicy" value="CHARGE_IMMEDIATELY" disabled />
 							<span class="mdl-radio__label">Charge immediately</span>
 						</label><br />
 						
 						<h5>Cancellation Policy</h5>
 						<label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="cancellationPolicy-1">
-							<input type="radio" id="cancellationPolicy-1" class="mdl-radio__button" name="cancellationPolicy" value="REFUND_IF_CANCEL_IN_TIME" checked />
+							<input type="radio" id="cancellationPolicy-1" class="mdl-radio__button" name="cancellationPolicy" value="REFUND_IF_CANCEL_IN_TIME" checked disabled />
 							<span class="mdl-radio__label">No payment due if cancelled a number of hours before appointment starts</span><br />
 							<span class="mdl-textfield mdl-js-textfield  mdl-textfield--floating-label">
-								<input class="mdl-textfield__input" type="text" pattern="[0-9]+" id="cancellationDeadline" value="24" />
+								<input class="mdl-textfield__input" type="text" pattern="[0-9]+" id="cancellationDeadline" value="24" disabled />
 								<span class="mdl-textfield__label" for="sample2">Hours before appointment starts</span>
 								<span class="mdl-textfield__error">Not a whole number</span>
 							</span>
 						</label><br />
 						<label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="cancellationPolicy-2">
-							<input type="radio" id="cancellationPolicy-2" class="mdl-radio__button" name="cancellationPolicy" value="NEVER_REFUND" />
+							<input type="radio" id="cancellationPolicy-2" class="mdl-radio__button" name="cancellationPolicy" value="NEVER_REFUND" disabled />
 							<span class="mdl-radio__label">No payment due if cancelled at any time</span>
 						</label><br />
 						<label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="cancellationPolicy-3">
-							<input type="radio" id="cancellationPolicy-3" class="mdl-radio__button" name="cancellationPolicy" value="ALWAYS_REFUND" />
+							<input type="radio" id="cancellationPolicy-3" class="mdl-radio__button" name="cancellationPolicy" value="ALWAYS_REFUND" disabled />
 							<span class="mdl-radio__label">Payment is always due regardless of cancellation</span>
 						</label><br />
 							
-						<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect save-button">Save</button>
+						<div class="form-status"></div>
+						<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect save-button" disabled>Save</button>
 					</form>
 				</section>
 
 				<section id="information-section" class="console-page">
 					<form data-destination="/user/setUserInformation" data-source="/user/getUserInformation">
 						<h4>Information</h4>
+						<div class="form-status"></div>
 						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-							<input class="mdl-textfield__input" type="text" id="firstName" /> 
+							<input class="mdl-textfield__input" type="text" id="firstName" disabled /> 
 							<label class="mdl-textfield__label" for="firstName">First Name</label>
 						</div><br />
 						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-							<input class="mdl-textfield__input" type="text" id="lastName" /> 
+							<input class="mdl-textfield__input" type="text" id="lastName" disabled /> 
 							<label class="mdl-textfield__label" for="lastName">Last Name</label>
 						</div><br />
 						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-							<input class="mdl-textfield__input" type="text" id="handle" /> 
+							<input class="mdl-textfield__input" type="text" id="handle" disabled /> 
 							<label class="mdl-textfield__label" for="handle">Handle</label>
 						</div><br />
 						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-							<input class="mdl-textfield__input" type="text" id="phoneNumber" ></textarea>
+							<input class="mdl-textfield__input" type="text" id="phoneNumber" disabled ></textarea>
 							<label class="mdl-textfield__label" for="aboutMe">Phone Number</label>
 						</div><br />
 						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-							<input class="mdl-textfield__input" type="text" id="contactEmail" ></textarea>
+							<input class="mdl-textfield__input" type="text" id="contactEmail" disabled ></textarea>
 							<label class="mdl-textfield__label" for="aboutMe">Email Address</label>
 						</div><br />
 						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-							<textarea class="mdl-textfield__input" type="text" rows="3" id="aboutMe" ></textarea>
+							<textarea class="mdl-textfield__input" type="text" rows="3" id="aboutMe" disabled ></textarea>
 							<label class="mdl-textfield__label" for="aboutMe">About Myself</label>
 						</div><br />
 						
-						<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect save-button">Save</button>
+						<div class="form-status"></div>
+						<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect save-button" disabled>Save</button>
 					</form>
 				</section>
 
