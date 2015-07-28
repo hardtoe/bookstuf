@@ -1,9 +1,8 @@
 package com.bookstuf.web;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -18,13 +17,9 @@ import com.bookstuf.appengine.UserService;
 import com.bookstuf.datastore.User;
 import com.bookstuf.datastore.UserInformation;
 import com.bookstuf.datastore.UserServices;
-import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Transaction;
-import com.google.identitytoolkit.GitkitClient;
 import com.google.identitytoolkit.GitkitClientException;
-import com.google.identitytoolkit.GitkitUser;
 import com.google.inject.Inject;
-import com.google.inject.Provider;
 import com.google.inject.Singleton;
 
 @Singleton
@@ -64,7 +59,9 @@ public class UserServlet extends RpcServlet {
 		final HttpServletRequest request
 	) throws 
 		IOException, 
-		GitkitClientException
+		GitkitClientException, 
+		InterruptedException, 
+		ExecutionException
 	{
 		final Transaction t =
 			Datastore.beginTransaction();
@@ -75,8 +72,14 @@ public class UserServlet extends RpcServlet {
 					request.getReader(),
 					userService.getCurrentUserInformation(t));
 
-			// TODO: handle errors
 			Datastore.put(userInformation);
+
+			final User user =
+				userService.getCurrentUser(t);
+			
+			user.setProviderInformationStatus(userInformation.getStatus());
+			
+			Datastore.put(user);
 			
 			t.commit();
 			
@@ -105,22 +108,25 @@ public class UserServlet extends RpcServlet {
 	) throws 
 		IOException, 
 		GitkitClientException, 
-		NotLoggedInException 
+		InterruptedException, 
+		ExecutionException 
 	{
 		final Transaction t =
 			Datastore.beginTransaction();
 			
-		try {					
-			final User user =
-				userService.getCurrentUser(t);
-			
+		try {				
 			final UserServices userServices =
 				gsonHelper.updateFromJson(
 					request.getReader(),
 					userService.getCurrentUserServices(t));
-
-			// TODO: handle errors
+			
 			Datastore.put(userServices);
+
+			final User user =
+				userService.getCurrentUser(t);
+			
+			user.setProviderServicesStatus(userServices.getStatus());
+			
 			Datastore.put(user);
 			
 			t.commit();

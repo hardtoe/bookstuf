@@ -54,6 +54,11 @@ function setFormEnabled(form, enabled) {
 		input.prop("disabled", enabled);
 	});
 		
+	// remove any disabled styling on the form elements
+	form.find('div, label').each(function(index){
+		$(this).removeClass('is-disabled');
+	});
+	
 	// enable buttons
 	form.find('button').prop("disabled", enabled);
 }
@@ -65,6 +70,36 @@ function enableForm(form) {
 function disableForm(form) {
 	setFormEnabled(form, true);
 	
+}
+
+function getUrlParameter(sParam) {
+    var sPageURL = decodeURIComponent(window.location.search.substring(1));
+    var sURLVariables = sPageURL.split('&');
+    var i;
+
+    for (i = 0; i < sURLVariables.length; i++) {
+        var sParameterName = sURLVariables[i].split('=');
+
+        if (sParameterName[0] === sParam) {
+            return sParameterName[1] === undefined ? true : sParameterName[1];
+        }
+    }
+}
+
+function hasUrlParameter(sParam) {
+    var sPageURL = decodeURIComponent(window.location.search.substring(1));
+    var sURLVariables = sPageURL.split('&');
+    var i;
+
+    for (i = 0; i < sURLVariables.length; i++) {
+        var sParameterName = sURLVariables[i].split('=');
+
+        if (sParameterName[0] === sParam) {
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 // form data load and save
@@ -151,11 +186,18 @@ $(function() {
 					dataType: "json"
 						
 				}).done(function(rsp) {
-					// clear saving indication
-					form.find('.form-status').each(function(index) {
-						var div = $(this);
-						div.removeClass('form-saving').addClass('form-saved');
-					});
+					if (hasUrlParameter("checklist")) {
+						// go back to account setup checklist
+						window.location.href = "checklist.html";
+						
+					} else {
+						// clear saving indication
+						form.find('.form-status').each(function(index) {
+							var div = $(this);
+							div.removeClass('form-saving').addClass('form-saved');
+						});
+					}
+					
 					
 				}).fail(function(rsp) {
 					// clear saving indication

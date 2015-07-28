@@ -75,4 +75,20 @@ public class UserInformation {
 	public void setAboutMe(String aboutMe) {
 		this.aboutMe = aboutMe;
 	}
+
+	public ProviderInformationStatus getStatus() {
+		if (
+			handle != null && !handle.matches("\\s*") &&
+			firstName != null && !firstName.matches("\\s*") &&
+			lastName != null && !lastName.matches("\\s*") &&
+			phoneNumber != null && !phoneNumber.matches("\\s*") &&
+			contactEmail != null && !contactEmail.matches("\\s*") &&
+			aboutMe != null && !aboutMe.matches("\\s*")
+		) {
+			return ProviderInformationStatus.COMPLETE;
+			
+		} else {
+			return ProviderInformationStatus.PARTIAL;
+		}
+	}
 }

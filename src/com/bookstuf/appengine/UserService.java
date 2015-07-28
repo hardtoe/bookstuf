@@ -1,10 +1,13 @@
 package com.bookstuf.appengine;
 
 import java.io.Serializable;
+import java.util.concurrent.Callable;
 
 import org.slim3.datastore.Datastore;
 import org.slim3.datastore.EntityNotFoundRuntimeException;
 
+import com.bookstuf.datastore.CancellationPolicy;
+import com.bookstuf.datastore.ChargePolicy;
 import com.bookstuf.datastore.ProviderInformationStatus;
 import com.bookstuf.datastore.User;
 import com.bookstuf.datastore.UserInformation;
@@ -12,6 +15,8 @@ import com.bookstuf.datastore.UserServices;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Transaction;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.identitytoolkit.GitkitUser;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
@@ -21,11 +26,14 @@ import com.google.inject.Singleton;
 public class UserService implements Serializable {
 	private static final long serialVersionUID = 1043735132447223363L;
 	private Provider<GitkitUser> gitkitUser;
+	private Provider<ListeningExecutorService> executorService;
 
 	@Inject UserService (
-		final Provider<GitkitUser> gitkitUser
+		final Provider<GitkitUser> gitkitUser,
+		final Provider<ListeningExecutorService> executorService
 	) {
 		this.gitkitUser = gitkitUser;
+		this.executorService = executorService;
 	}
 	
 	public Key getCurrentUserKey(
@@ -37,6 +45,18 @@ public class UserService implements Serializable {
 		} else {
 			return KeyFactory.createKey(getCurrentUserKey(User.class), kind.getSimpleName(), "gitkitLocalId:" + gitkitUser.get().getLocalId());
 		}
+	}
+	
+	// TODO: might have to make this use the Datastore async get instead of using exec service
+	public ListenableFuture<User> getCurrentUserAsync(
+		final Transaction transaction
+	) {
+		return executorService.get().submit(new Callable<User>() {
+			@Override
+			public User call() throws Exception {
+				return getCurrentUser(transaction);
+			}
+		});
 	}
 	
 	public User getCurrentUser(
@@ -57,7 +77,8 @@ public class UserService implements Serializable {
 			user.setGitkitUserId(gitkitUserValue.getLocalId());
 			user.setGitkitUserEmail(gitkitUserValue.getEmail());
 			user.setStripeConnectStatus(null);
-			user.setProviderInformationStatus(ProviderInformationStatus.MISSING);		
+			user.setProviderInformationStatus(ProviderInformationStatus.MISSING);	
+			user.setProviderServicesStatus(ProviderInformationStatus.MISSING);		
 			return user;
 		}
 	}
@@ -90,6 +111,8 @@ public class UserService implements Serializable {
 		} catch (final EntityNotFoundRuntimeException e) {
 			final UserServices userServices = new UserServices();
 			userServices.setKey(userServicesKey);
+			userServices.setCancellationPolicy(CancellationPolicy.REFUND_IF_CANCEL_IN_TIME);
+			userServices.setChargePolicy(ChargePolicy.CHARGE_AFTER);
 			return userServices;
 		}
 	}

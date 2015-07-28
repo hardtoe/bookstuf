@@ -79,6 +79,7 @@
 						// Print Fliers button
 						if (data["notLoggedIn"]) {
 							$('#enter-information').html('');
+							$('#enter-services').html('');
 							$('#manage-bookings').html('');
 							$('#go-live').html('');
 							$('#create-fliers').html('');
@@ -92,10 +93,20 @@
 								$('#enter-information').html(checkmark);
 			
 							} else if (data["providerInformationStatus"] == "PARTIAL") {
-								$('#enter-information').html('<form action="console.html#information-section"><button type="submit" class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect">Complete Information</button></form>')
+								$('#enter-information').html('<form action="console.html#information-section"><input type="hidden" name="checklist" value="true" /><button type="submit" class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect">Complete Information</button></form>')
 	
 							} else {
-								$('#enter-information').html('<form action="console.html#information-section"><button type="submit" class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect">Enter Information</button></form>')
+								$('#enter-information').html('<form action="console.html#information-section"><input type="hidden" name="checklist" value="true" /><button type="submit" class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect">Enter Information</button></form>')
+							}	
+							
+							if (data["providerServicesStatus"] == "COMPLETE") {	
+								$('#enter-services').html(checkmark);
+			
+							} else if (data["providerServicesStatus"] == "PARTIAL") {
+								$('#enter-services').html('<form action="console.html#services-section"><input type="hidden" name="checklist" value="true" /><button type="submit" class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect">Complete Services</button></form>')
+	
+							} else {
+								$('#enter-services').html('<form action="console.html#services-section"><input type="hidden" name="checklist" value="true" /><button type="submit" class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect">Enter Services</button></form>')
 							}
 						}
 					});
@@ -177,12 +188,10 @@
 		
 		<div class="mdl-card mdl-shadow--2dp checklist-card">
 			<div class="mdl-card__title checklist-header">
-				<h2 class="mdl-card__title-text">3. Setup your service information and availability.</h2>
+				<h2 class="mdl-card__title-text">3. Enter your contact information.</h2>
 			</div>
 			<div class="mdl-card__supporting-text">
-				Your clients need information on what services you provide, where to find you, how to
-				contact you, and when you are available for appointments.  You will need to enter this
-				information before you can start accepting bookings.
+				Your clients need to know a little bit about you and how to contact you.
 			</div>
 			<div id="enter-information" class="mdl-card__actions mdl-card--border">
 				<div class="mdl-spinner mdl-js-spinner is-active"></div>	
@@ -191,10 +200,24 @@
 		
 		<div class="mdl-card mdl-shadow--2dp checklist-card">
 			<div class="mdl-card__title checklist-header">
-				<h2 class="mdl-card__title-text">4. Manage your bookings.</h2>
+				<h2 class="mdl-card__title-text">4. Enter your service information.</h2>
 			</div>
 			<div class="mdl-card__supporting-text">
-				Users will come to your booking page to check your availability and pick a slot.  You will
+				Your clients need information on what services you provide, where to find you, and when 
+				you are available for appointments.  You will need to enter this information before you 
+				can start accepting bookings.
+			</div>
+			<div id="enter-services" class="mdl-card__actions mdl-card--border">
+				<div class="mdl-spinner mdl-js-spinner is-active"></div>	
+			</div>
+		</div>
+		
+		<div class="mdl-card mdl-shadow--2dp checklist-card">
+			<div class="mdl-card__title checklist-header">
+				<h2 class="mdl-card__title-text">5. Manage your bookings.</h2>
+			</div>
+			<div class="mdl-card__supporting-text">
+				Clients will come to your booking page to check your availability and pick a slot.  You will
 				want to input any existing bookings you have and manage them on an on-going basis.  All of
 				this can be done in the console.  
 			</div>
@@ -205,7 +228,7 @@
 		
 		<div class="mdl-card mdl-shadow--2dp checklist-card">
 			<div class="mdl-card__title checklist-header">
-				<h2 class="mdl-card__title-text">5. Go live.</h2>
+				<h2 class="mdl-card__title-text">6. Go live.</h2>
 			</div>
 			<div class="mdl-card__supporting-text">
 				Once all of your information and current bookings are entered you are ready to go live.
@@ -217,7 +240,7 @@
 		
 		<div class="mdl-card mdl-shadow--2dp checklist-card">
 			<div class="mdl-card__title checklist-header">
-				<h2 class="mdl-card__title-text">6. Get the word out!</h2>
+				<h2 class="mdl-card__title-text">7. Get the word out!</h2>
 			</div>
 			<div class="mdl-card__supporting-text">
 				You are ready to accept new bookings online at bookstuf.com, let the world know! 

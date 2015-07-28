@@ -12,6 +12,7 @@ public class UserServices {
     @PublicReadOnly
     private Key key;
 
+    // WARNING: Update status function when adding new field!
     private String aboutServices;
     private String addressLine1;
     private String addressLine2;
@@ -100,5 +101,20 @@ public class UserServices {
 
 	public void setZipcode(String zipcode) {
 		this.zipcode = zipcode;
+	}
+
+	public ProviderInformationStatus getStatus() {
+		if (
+			aboutServices != null && !aboutServices.matches("\\s*") &&
+			addressLine1 != null && !addressLine1.matches("\\s*") &&
+			city != null && !city.matches("\\s*") &&
+			state != null && !state.matches("\\s*") &&
+			zipcode != null && !zipcode.matches("\\s*")
+		) {
+			return ProviderInformationStatus.COMPLETE;
+			
+		} else {
+			return ProviderInformationStatus.PARTIAL;
+		}
 	}
 }

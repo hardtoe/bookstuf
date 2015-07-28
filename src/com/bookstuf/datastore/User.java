@@ -20,7 +20,7 @@ public class User {
     private String stripeRefreshToken;
     
     private ProviderInformationStatus providerInformationStatus;
-    private Key providerInformationKey;
+    private ProviderInformationStatus providerServicesStatus;
     
 	public Key getKey() {
 		return key;
@@ -94,11 +94,11 @@ public class User {
 		this.providerInformationStatus = providerInformationStatus;
 	}
 
-	public Key getProviderInformationKey() {
-		return providerInformationKey;
+	public ProviderInformationStatus getProviderServicesStatus() {
+		return providerServicesStatus;
 	}
 
-	public void setProviderInformationKey(Key providerInformationKey) {
-		this.providerInformationKey = providerInformationKey;
+	public void setProviderServicesStatus(ProviderInformationStatus providerServicesStatus) {
+		this.providerServicesStatus = providerServicesStatus;
 	}
 }
