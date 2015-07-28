@@ -5,8 +5,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
 
 import com.google.identitytoolkit.GitkitClient;
+import com.google.identitytoolkit.GitkitClientException;
+import com.google.identitytoolkit.GitkitServerException;
+import com.google.identitytoolkit.GitkitUser;
 import com.google.inject.name.Named;
 import com.google.inject.Singleton;
 import com.google.appengine.api.ThreadManager;
@@ -34,6 +38,22 @@ public class BookstufLogicModule extends AbstractModule {
 
 	@Provides @RequestScoped public ListeningExecutorService getListeningExecService(final ExecutorService threadPool) {
 		return MoreExecutors.listeningDecorator(threadPool);
+	}
+	
+	@Provides @RequestScoped public GitkitUser getGitkitUser(
+		final GitkitClient gitkitClient,
+		final HttpServletRequest req
+	) throws 
+		GitkitClientException 
+	{
+		final GitkitUser gitkitUser = 
+			gitkitClient.validateTokenInRequest(req);
+		
+		if (gitkitUser == null) {
+			throw new NotLoggedInException();
+		}
+		
+		return gitkitUser;
 	}
 	
 	@Provides @Singleton @Named("retriable-exceptions") public HashSet<Class<?>> getRetriableExceptions() {

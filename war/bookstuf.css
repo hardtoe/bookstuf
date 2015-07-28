@@ -32,10 +32,10 @@
 }
 
 .form-status {
-	
+
 }
 
-.form-loading {
+.form-loading::after {
 	content: "Loading...";
 }
 
@@ -43,10 +43,14 @@
 	
 }
 
-.form-saving {
+.form-saving::after {
 	content: "Saving...";
 }
 
-.form-saved {
+.form-saved::after {
 	content: "Saved!";
+}
+
+.form-save-fail::after {
+	content: "Error while saving! Try again later.";
 }

@@ -8,6 +8,7 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -21,6 +22,7 @@ import com.google.gson.stream.JsonWriter;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Provider;
+import com.google.inject.ProvisionException;
 
 public abstract class RpcServlet extends HttpServlet {
 	@Inject private Injector injector;
@@ -169,14 +171,18 @@ public abstract class RpcServlet extends HttpServlet {
 			}
 			
 		} catch (final InvocationTargetException e) {
+			final Throwable realCause =
+				getRealCause(e);
+			
 			final Class<? extends Throwable> causeClass =
-				e.getCause().getClass();
+				realCause.getClass();
+			
 			
 			if (exceptionHandlers.containsKey(causeClass)) {
 				final Method exceptionHandler =
 					exceptionHandlers.get(causeClass);
 				
-				currentException.set(e.getCause());
+				currentException.set(realCause);
 				
 				invoke(request, response, exceptionHandler);
 				
@@ -189,6 +195,20 @@ public abstract class RpcServlet extends HttpServlet {
 		}
 	}
 	
+	private Throwable getRealCause(final Throwable t) {
+		if (
+			t.getClass() == InvocationTargetException.class ||
+			t.getClass() == ProvisionException.class ||
+			t.getClass() == RuntimeException.class ||
+			t.getClass() == ExecutionException.class
+		) {
+			return getRealCause(t.getCause());
+			
+		} else {
+			return t;
+		}
+	}
+
 	protected Throwable getCurrentException() {
 		return currentException.get();
 	}

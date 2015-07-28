@@ -1,5 +1,5 @@
 package com.bookstuf.appengine;
 
-public class NotLoggedInException extends Exception {
+public class NotLoggedInException extends RuntimeException {
 
 }

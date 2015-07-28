@@ -11,9 +11,6 @@ public class UserInformation {
     @Attribute(primaryKey = true)
     @PublicReadOnly
     private Key key;
-
-    @PublicReadOnly
-    private String gitkitUserId;
     
     private String handle;
     
@@ -29,14 +26,6 @@ public class UserInformation {
 
 	public void setKey(Key key) {
 		this.key = key;
-	}
-
-	public String getGitkitUserId() {
-		return gitkitUserId;
-	}
-
-	public void setGitkitUserId(String gitkitUserId) {
-		this.gitkitUserId = gitkitUserId;
 	}
 
 	public String getHandle() {

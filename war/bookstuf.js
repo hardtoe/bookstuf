@@ -40,6 +40,33 @@ $(document).ready(function() {
     });
 });
 
+function setFormEnabled(form, enabled) {
+	// enable and fill in text fields
+	form.find('input[type=text], textarea').each(function(index) {
+		var input = $(this);
+		input.prop("disabled", enabled);
+	});
+
+	// enable and set radio buttons
+	form.find('label.mdl-radio').each(function(index) {
+		var label = $(this);
+		var input = label.find('input[type=radio]');
+		input.prop("disabled", enabled);
+	});
+		
+	// enable buttons
+	form.find('button').prop("disabled", enabled);
+}
+
+function enableForm(form) {
+	setFormEnabled(form, false);
+}
+
+function disableForm(form) {
+	setFormEnabled(form, true);
+	
+}
+
 // form data load and save
 $(function() {
 	$("form").each(function(index) {
@@ -56,12 +83,12 @@ $(function() {
 			$.get(form.attr("data-source"))
 				.done(function(data) {
 					var json = JSON.parse(data);
+
+					enableForm(form);
 					
-					// enable and fill in text fields
+					// fill in text fields
 					form.find('input[type=text], textarea').each(function(index) {
 						var input = $(this);
-						input.prop("disabled", false);
-						
 						var value = json[input.attr("id")];
 						
 						if (value) {
@@ -70,12 +97,10 @@ $(function() {
 						}
 					});
 
-					// enable and set radio buttons
+					// set radio buttons
 					form.find('label.mdl-radio').each(function(index) {
 						var label = $(this);
 						var input = label.find('input[type=radio]');
-						input.prop("disabled", false);
-						
 						var value = json[input.attr("name")];
 						
 						if (value) {
@@ -84,9 +109,6 @@ $(function() {
 							}
 						}
 					});
-						
-					// enable buttons
-					form.find('button').prop("disabled", false);
 					
 					// clear loading indication
 					form.find('.form-status').each(function(index) {
@@ -99,10 +121,12 @@ $(function() {
 		// save data
 		if (form.attr("data-destination") != null) {	
 			form.find('.save-button').click(function() {
+				disableForm(form);
+				
 				// set saving indication
 				form.find('.form-status').each(function(index) {
 					var div = $(this);
-					div.removeClass('form-idle form-saved').addClass('form-saving');
+					div.removeClass('form-idle form-saved form-save-fail').addClass('form-saving');
 				});
 				
 				// gather form data
@@ -125,12 +149,23 @@ $(function() {
 					url: form.attr("data-destination"),
 					data: JSON.stringify(data),
 					dataType: "json"
+						
 				}).done(function(rsp) {
 					// clear saving indication
 					form.find('.form-status').each(function(index) {
 						var div = $(this);
 						div.removeClass('form-saving').addClass('form-saved');
 					});
+					
+				}).fail(function(rsp) {
+					// clear saving indication
+					form.find('.form-status').each(function(index) {
+						var div = $(this);
+						div.removeClass('form-saving').addClass('form-save-fail');
+					});
+					
+				}).always(function(rsp) {
+					enableForm(form);
 				});
 				
 				return false;

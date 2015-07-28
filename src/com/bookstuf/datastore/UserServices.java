@@ -11,12 +11,13 @@ public class UserServices {
     @Attribute(primaryKey = true)
     @PublicReadOnly
     private Key key;
-    
-    @PublicReadOnly
-    private String gitkitUserId;
 
     private String aboutServices;
-    private String address;
+    private String addressLine1;
+    private String addressLine2;
+    private String city;
+    private String state;
+    private String zipcode;
     private ChargePolicy chargePolicy;
     private CancellationPolicy cancellationPolicy;
 	private int cancellationDeadline;
@@ -29,28 +30,12 @@ public class UserServices {
 		this.key = key;
 	}
 
-	public String getGitkitUserId() {
-		return gitkitUserId;
-	}
-
-	public void setGitkitUserId(String gitkitUserId) {
-		this.gitkitUserId = gitkitUserId;
-	}
-
 	public String getAboutServices() {
 		return aboutServices;
 	}
 
 	public void setAboutServices(String aboutServices) {
 		this.aboutServices = aboutServices;
-	}
-
-	public String getAddress() {
-		return address;
-	}
-
-	public void setAddress(String address) {
-		this.address = address;
 	}
 
 	public ChargePolicy getChargePolicy() {
@@ -75,5 +60,45 @@ public class UserServices {
 
 	public void setCancellationDeadline(int cancellationDeadline) {
 		this.cancellationDeadline = cancellationDeadline;
+	}
+
+	public String getAddressLine1() {
+		return addressLine1;
+	}
+
+	public void setAddressLine1(String addressLine1) {
+		this.addressLine1 = addressLine1;
+	}
+
+	public String getAddressLine2() {
+		return addressLine2;
+	}
+
+	public void setAddressLine2(String addressLine2) {
+		this.addressLine2 = addressLine2;
+	}
+
+	public String getCity() {
+		return city;
+	}
+
+	public void setCity(String city) {
+		this.city = city;
+	}
+
+	public String getState() {
+		return state;
+	}
+
+	public void setState(String state) {
+		this.state = state;
+	}
+
+	public String getZipcode() {
+		return zipcode;
+	}
+
+	public void setZipcode(String zipcode) {
+		this.zipcode = zipcode;
 	}
 }

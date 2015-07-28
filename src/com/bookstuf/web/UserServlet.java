@@ -18,6 +18,7 @@ import com.bookstuf.appengine.UserService;
 import com.bookstuf.datastore.User;
 import com.bookstuf.datastore.UserInformation;
 import com.bookstuf.datastore.UserServices;
+import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Transaction;
 import com.google.identitytoolkit.GitkitClient;
 import com.google.identitytoolkit.GitkitClientException;
@@ -30,20 +31,16 @@ import com.google.inject.Singleton;
 @SuppressWarnings("serial")
 public class UserServlet extends RpcServlet {
 	private final Logger logger;
-	private final Provider<GitkitClient> gitkitClient;
 	private final UserService userService;
 	private final GsonHelper gsonHelper;
 	
 	@Inject UserServlet(
 		final Logger logger,
-		final Provider<GitkitClient> gitkitClient,
 		final UserService userService,
 		final GsonHelper gsonHelper
 	) {
 		this.logger = logger;
-		this.gitkitClient = gitkitClient;
 		this.userService = userService;
-		
 		this.gsonHelper = gsonHelper;
 	}
 
@@ -57,35 +54,26 @@ public class UserServlet extends RpcServlet {
 		final HttpServletRequest request
 	) throws 
 		GitkitClientException, 
-		IOException, 
-		NotLoggedInException 
+		IOException
 	{
-		final GitkitUser gitkitUser =
-			gitkitClient.get().validateTokenInRequest(request);
-
-		return 
-			userService.getCurrentUser(gitkitUser, null);
+		return userService.getCurrentUser(null);
 	}
 	
 	@Publish(autoRetryMillis = 30000)
-	private void setUserInformation(
+	private String setUserInformation(
 		final HttpServletRequest request
 	) throws 
 		IOException, 
-		GitkitClientException, 
-		NotLoggedInException 
+		GitkitClientException
 	{
-		final GitkitUser gitkitUser =
-			gitkitClient.get().validateTokenInRequest(request);
-
 		final Transaction t =
 			Datastore.beginTransaction();
 			
 		try {					
 			final UserInformation userInformation =
 				gsonHelper.updateFromJson(
-						request.getReader(),
-					userService.getCurrentUserInformation(gitkitUser, t));
+					request.getReader(),
+					userService.getCurrentUserInformation(t));
 
 			// TODO: handle errors
 			Datastore.put(userInformation);
@@ -97,6 +85,8 @@ public class UserServlet extends RpcServlet {
 				t.rollback();
 			}
 		}
+		
+		return "{}";
 	}
 	
 	@Publish(autoRetryMillis = 30000)
@@ -104,38 +94,34 @@ public class UserServlet extends RpcServlet {
 		final HttpServletRequest request
 	) throws 
 		IOException, 
-		GitkitClientException, 
-		NotLoggedInException 
+		GitkitClientException
 	{
-		final GitkitUser gitkitUser =
-			gitkitClient.get().validateTokenInRequest(request);
-	
-		return 
-			userService.getCurrentUserInformation(gitkitUser, null);	
+		return userService.getCurrentUserInformation(null);	
 	}
 	
 	@Publish(autoRetryMillis = 30000)
-	private void setUserServices(
+	private String setUserServices(
 		final HttpServletRequest request
 	) throws 
 		IOException, 
 		GitkitClientException, 
 		NotLoggedInException 
 	{
-		final GitkitUser gitkitUser =
-			gitkitClient.get().validateTokenInRequest(request);
-
 		final Transaction t =
 			Datastore.beginTransaction();
 			
 		try {					
+			final User user =
+				userService.getCurrentUser(t);
+			
 			final UserServices userServices =
 				gsonHelper.updateFromJson(
 					request.getReader(),
-					userService.getCurrentUserServices(gitkitUser, t));
+					userService.getCurrentUserServices(t));
 
 			// TODO: handle errors
 			Datastore.put(userServices);
+			Datastore.put(user);
 			
 			t.commit();
 			
@@ -144,6 +130,8 @@ public class UserServlet extends RpcServlet {
 				t.rollback();
 			}
 		}
+		
+		return "{}";
 	}
 	
 	@Publish(autoRetryMillis = 30000)
@@ -151,14 +139,9 @@ public class UserServlet extends RpcServlet {
 		final HttpServletRequest request
 	) throws 
 		IOException, 
-		GitkitClientException, 
-		NotLoggedInException 
+		GitkitClientException
 	{
-		final GitkitUser gitkitUser =
-			gitkitClient.get().validateTokenInRequest(request);
-
-		return
-			userService.getCurrentUserServices(gitkitUser, null);
+		return userService.getCurrentUserServices(null);
 	}
 	
 	@ExceptionHandler(NotLoggedInException.class) 

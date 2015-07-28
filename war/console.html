@@ -69,21 +69,31 @@
 				<section id="services-section" class="console-page">
 					<form data-destination="/user/setUserServices" data-source="/user/getUserServices">
 						<h4>Services</h4>
-						<div class="form-status"></div>
-						<div class="input-group">
-							<div class="input-field">
-								<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-									<textarea class="mdl-textfield__input" type="text" rows="3" id="aboutServices" disabled></textarea>
-									<label class="mdl-textfield__label" for="aboutServices">Summary of Services</label>
-								</div>
-							</div>
-							<div class="input-copy">
-								<p></p>
-							</div>
+						<p class="form-status"></p>
+						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+							<textarea class="mdl-textfield__input" type="text" rows="3" id="aboutServices" disabled></textarea>
+							<label class="mdl-textfield__label" for="aboutServices">Summary of Services</label>
+						</div><br />
+						
+						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+							<input class="mdl-textfield__input" type="text" id="addressLine1" disabled></input>
+							<label class="mdl-textfield__label" for="addressLine1">Address Line One</label>
 						</div><br />
 						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-							<textarea class="mdl-textfield__input" type="text" rows="2" id="address" disabled></textarea>
-							<label class="mdl-textfield__label" for="address">Address of Services</label>
+							<input class="mdl-textfield__input" type="text" id="addressLine2" disabled></input>
+							<label class="mdl-textfield__label" for="addressLine2">Address Line Two</label>
+						</div><br />
+						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+							<input class="mdl-textfield__input" type="text" id="city" disabled></input>
+							<label class="mdl-textfield__label" for="city">City</label>
+						</div><br />
+						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+							<input class="mdl-textfield__input" type="text" id="state" disabled></input>
+							<label class="mdl-textfield__label" for="state">State</label>
+						</div><br />
+						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+							<input class="mdl-textfield__input" type="text" id="zipcode" disabled></input>
+							<label class="mdl-textfield__label" for="zipcode">Zip</label>
 						</div><br />
 						
 						<h5>Credit Card Charge Policy</h5>
@@ -115,7 +125,7 @@
 							<span class="mdl-radio__label">Payment is always due regardless of cancellation</span>
 						</label><br />
 							
-						<div class="form-status"></div>
+						<p class="form-status"></p>
 						<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect save-button" disabled>Save</button>
 					</form>
 				</section>
@@ -123,7 +133,7 @@
 				<section id="information-section" class="console-page">
 					<form data-destination="/user/setUserInformation" data-source="/user/getUserInformation">
 						<h4>Information</h4>
-						<div class="form-status"></div>
+						<p class="form-status"></p>
 						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
 							<input class="mdl-textfield__input" type="text" id="firstName" disabled /> 
 							<label class="mdl-textfield__label" for="firstName">First Name</label>
@@ -149,7 +159,7 @@
 							<label class="mdl-textfield__label" for="aboutMe">About Myself</label>
 						</div><br />
 						
-						<div class="form-status"></div>
+						<p class="form-status"></p>
 						<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect save-button" disabled>Save</button>
 					</form>
 				</section>
