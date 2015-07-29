@@ -1,5 +1,6 @@
 package com.bookstuf.appengine;
 
+import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -62,6 +63,7 @@ public class BookstufLogicModule extends AbstractModule {
 		
 		retriableExceptions.add(TransientFailureException.class);
 		retriableExceptions.add(DatastoreTimeoutException.class);
+		retriableExceptions.add(ConcurrentModificationException.class);
 		
 		return retriableExceptions;
 	}

@@ -1,11 +1,14 @@
 package com.bookstuf.appengine;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.google.inject.Inject;
+import com.google.inject.ProvisionException;
 import com.google.appengine.api.taskqueue.DeferredTask;
 import com.google.appengine.api.taskqueue.Queue;
 import com.google.appengine.api.taskqueue.RetryOptions;
@@ -138,27 +141,47 @@ public class RetryHelper {
 		Exception 
 	{
 		long backoffMillis = 50;
+		int attempt = 0;
 		
 		while (true) {
 			try {
 				return callable.call();
 				
 			} catch (final Exception e) {
-				if (isRetriableException(e)) {
+				if (isRetriableException(getRealCause(e))) {
 					backoffMillis = (long) ((backoffMillis * 1.5) + (backoffMillis * Math.random()));
 
-					if ((ApiProxy.getCurrentEnvironment().getRemainingMillis() - backoffMillis) > millisToLeaveInReserve) {
-						logger.log(Level.INFO, "Retrying failed task.", e);
+					final long remainingMillis = 
+						ApiProxy.getCurrentEnvironment().getRemainingMillis();
+					
+					if ((remainingMillis - backoffMillis) > millisToLeaveInReserve) {
+						logger.log(Level.WARNING, "Retrying failed task. attempt=" + attempt + ", backoffMillis=" + backoffMillis + ", remainingMillis=" + remainingMillis, e);
 						Thread.sleep(backoffMillis);
+						attempt++;
 						
 					} else {
-						logger.log(Level.WARNING, "Failed to complete retry before deadline.", e);
+						logger.log(Level.SEVERE, "Failed to complete retry before deadline. attempt=" + attempt, e);
 						throw e;
 					}
 				} else {
 					throw e;
 				}
 			}
+		}
+	}
+
+	
+	private Throwable getRealCause(final Throwable t) {
+		if (
+			t.getClass() == InvocationTargetException.class ||
+			t.getClass() == ProvisionException.class ||
+			t.getClass() == RuntimeException.class ||
+			t.getClass() == ExecutionException.class
+		) {
+			return getRealCause(t.getCause());
+			
+		} else {
+			return t;
 		}
 	}
 }
