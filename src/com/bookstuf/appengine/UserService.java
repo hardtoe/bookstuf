@@ -1,6 +1,7 @@
 package com.bookstuf.appengine;
 
 import java.io.Serializable;
+import java.util.LinkedList;
 import java.util.concurrent.Callable;
 
 import org.slim3.datastore.Datastore;
@@ -47,18 +48,6 @@ public class UserService implements Serializable {
 		}
 	}
 	
-	// TODO: might have to make this use the Datastore async get instead of using exec service
-	public ListenableFuture<User> getCurrentUserAsync(
-		final Transaction transaction
-	) {
-		return executorService.get().submit(new Callable<User>() {
-			@Override
-			public User call() throws Exception {
-				return getCurrentUser(transaction);
-			}
-		});
-	}
-	
 	public User getCurrentUser(
 		final Transaction transaction
 	) {
@@ -95,6 +84,7 @@ public class UserService implements Serializable {
 		} catch (final EntityNotFoundRuntimeException e) {
 			final UserInformation userInformation = new UserInformation();
 			userInformation.setKey(userInformationKey);
+			userInformation.setPhotoUrls(new LinkedList<String>());
 			return userInformation;
 		}
 	}

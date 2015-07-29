@@ -14,6 +14,10 @@
 		<script type="text/javascript" src="https://www.gstatic.com/authtoolkit/js/gitkit.js"></script>
 		<link type=text/css rel=stylesheet href="https://www.gstatic.com/authtoolkit/css/gitkit.css" />
 
+		<!-- dropzone.js -->
+		<script src="dropzone.js"></script>
+		<link type=text/css rel=stylesheet href="dropzone.css" />
+
 		<!-- bookstuf -->
 		<script type="text/javascript" src="bookstuf.js"></script>
 		<link type=text/css rel=stylesheet href="bookstuf.css" />
@@ -148,11 +152,11 @@
 							<label class="mdl-textfield__label" for="handle">Handle</label>
 						</div><br />
 						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-							<input class="mdl-textfield__input" type="text" id="phoneNumber" disabled ></textarea>
+							<input class="mdl-textfield__input" type="text" id="phoneNumber" disabled ></input>
 							<label class="mdl-textfield__label" for="aboutMe">Phone Number</label>
 						</div><br />
 						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-							<input class="mdl-textfield__input" type="text" id="contactEmail" disabled ></textarea>
+							<input class="mdl-textfield__input" type="text" id="contactEmail" disabled ></input>
 							<label class="mdl-textfield__label" for="aboutMe">Email Address</label>
 						</div><br />
 						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
@@ -166,7 +170,7 @@
 				</section>
 
 				<section id="pictures-section" class="console-page">
-					pictures
+					<form action="/photos/upload" method="post" class="dropzone" id="photo-dropzone"></form>
 				</section>
 
 				<section id="fliers-section" class="console-page">

@@ -3,23 +3,32 @@ package com.bookstuf.datastore;
 import org.slim3.datastore.Attribute;
 import org.slim3.datastore.Model;
 
+import com.bookstuf.PublicReadOnly;
 import com.google.appengine.api.datastore.Key;
 
 @Model
 public class User {
     @Attribute(primaryKey = true)
+    @PublicReadOnly
     private Key key;
-    
+
+    @PublicReadOnly
     private String gitkitUserId;
+    
+    @PublicReadOnly
     private String gitkitUserEmail;
-        
+
+    @PublicReadOnly
     private StripeConnectStatus stripeConnectStatus;
 	private String stripeUserId;
     private String stripePublishableKey;
     private String stripeAccessToken;
     private String stripeRefreshToken;
     
+    @PublicReadOnly
     private ProviderInformationStatus providerInformationStatus;
+    
+    @PublicReadOnly
     private ProviderInformationStatus providerServicesStatus;
     
 	public Key getKey() {

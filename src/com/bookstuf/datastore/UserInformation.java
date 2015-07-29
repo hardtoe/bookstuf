@@ -1,5 +1,7 @@
 package com.bookstuf.datastore;
 
+import java.util.LinkedList;
+
 import org.slim3.datastore.Attribute;
 import org.slim3.datastore.Model;
 
@@ -11,14 +13,15 @@ public class UserInformation {
     @Attribute(primaryKey = true)
     @PublicReadOnly
     private Key key;
-    
+
+    // WARNING: Update status function when adding new field!
     private String handle;
-    
     private String firstName;
     private String lastName;
     private String phoneNumber;
     private String contactEmail;
     private String aboutMe;
+    private LinkedList<String> photoUrls;
     
 	public Key getKey() {
 		return key;
@@ -76,6 +79,14 @@ public class UserInformation {
 		this.aboutMe = aboutMe;
 	}
 
+	public LinkedList<String> getPhotoUrls() {
+		return photoUrls;
+	}
+
+	public void setPhotoUrls(LinkedList<String> photoUrls) {
+		this.photoUrls = photoUrls;
+	}
+
 	public ProviderInformationStatus getStatus() {
 		if (
 			handle != null && !handle.matches("\\s*") &&
@@ -91,4 +102,5 @@ public class UserInformation {
 			return ProviderInformationStatus.PARTIAL;
 		}
 	}
+
 }
