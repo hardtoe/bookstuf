@@ -3,7 +3,6 @@ package com.bookstuf.web;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -12,12 +11,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.slim3.datastore.Datastore;
 
-import com.bookstuf.GsonHelper;
 import com.bookstuf.appengine.NotLoggedInException;
 import com.bookstuf.appengine.UserService;
-import com.bookstuf.datastore.User;
 import com.bookstuf.datastore.UserInformation;
-import com.bookstuf.datastore.UserServices;
 import com.google.appengine.api.blobstore.BlobKey;
 import com.google.appengine.api.blobstore.BlobstoreService;
 import com.google.appengine.api.blobstore.BlobstoreServiceFactory;
@@ -34,26 +30,61 @@ import com.google.inject.Singleton;
 public class PhotosServlet extends RpcServlet {
 	private final Logger logger;
 	private final UserService userService;
-	private final GsonHelper gsonHelper;
 	private final BlobstoreService blobstoreService;
 	private final ImagesService imagesService;
 	
+	private static final int MAX_PHOTOS = 50;
+	
 	@Inject PhotosServlet(
 		final Logger logger,
-		final UserService userService,
-		final GsonHelper gsonHelper
+		final UserService userService
 	) {
 		this.logger = logger;
 		this.userService = userService;
-		this.gsonHelper = gsonHelper;
 		this.blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
 		this.imagesService = ImagesServiceFactory.getImagesService();
 	}
+
+	@Publish(autoRetryMillis = 30000)
+	private void delete(
+		@Param("url") final String url
+	) {       	    
+		final Transaction t =
+			Datastore.beginTransaction();
+				
+		BlobKey blobKey = null;
+		
+		try {
+			final UserInformation userInformation =
+				userService.getCurrentUserInformation(t);
+	        
+			blobKey = userInformation.removePhoto(url);
+			
+			Datastore.put(t, userInformation);
+			
+			t.commit();
+			
+		} finally {
+			if (t.isActive()) {
+				t.rollback();
+			}
+		}
+
+		// only delete the image data if the transaction succeeds
+		if (blobKey != null) {
+			blobstoreService.delete(blobKey);
+		}
+	}
 	
 	@Publish(autoRetryMillis = 30000)
-	private String upload(
-		final HttpServletRequest req
-	) {
+	private void upload(
+		final HttpServletRequest req,
+		final HttpServletResponse rsp
+	) throws 
+		IOException 
+	{
+        boolean tooManyPhotos = false;
+        
 		final Transaction t =
 			Datastore.beginTransaction();
 				
@@ -66,20 +97,26 @@ public class PhotosServlet extends RpcServlet {
 	        
 	        final List<BlobKey> blobKeys = 
 	        	blobs.get("file");
-			
+	        
 	        for (final BlobKey blobKey : blobKeys) {
 	        	final ServingUrlOptions urlOptions = 
 	        		ServingUrlOptions.Builder
 	        		.withBlobKey(blobKey)
 	        		.secureUrl(true);
 	        	
-				final String url =
-        			imagesService.getServingUrl(urlOptions);
-	        			
-				userInformation.getPhotoUrls().add(url);
+	        	if (userInformation.getPhotoUrls().size() < MAX_PHOTOS) {
+					final String url =
+	        			imagesService.getServingUrl(urlOptions);
+		        			
+					userInformation.addPhoto(blobKey, url);
+					
+	        	} else {
+	        		blobstoreService.delete(blobKey);
+	        		tooManyPhotos = true;
+	        	}
 	        }
 			
-			Datastore.put(userInformation);
+			Datastore.put(t, userInformation);
 			
 			t.commit();
 			
@@ -89,7 +126,13 @@ public class PhotosServlet extends RpcServlet {
 			}
 		}
 		
-		return "";
+		if (tooManyPhotos) {
+			rsp.setStatus(500);
+			rsp.getOutputStream().println("Picture limit of 50 exceeded");
+			
+		} else {
+			rsp.getOutputStream().println("Success");
+		}
 	}
 	
 	@Publish

@@ -1,11 +1,13 @@
 package com.bookstuf.datastore;
 
+import java.util.Iterator;
 import java.util.LinkedList;
 
 import org.slim3.datastore.Attribute;
 import org.slim3.datastore.Model;
 
 import com.bookstuf.PublicReadOnly;
+import com.google.appengine.api.blobstore.BlobKey;
 import com.google.appengine.api.datastore.Key;
 
 @Model
@@ -22,6 +24,29 @@ public class UserInformation {
     private String contactEmail;
     private String aboutMe;
     private LinkedList<String> photoUrls;
+    
+    public void addPhoto(final BlobKey blobKey, final String url) {
+    	photoUrls.add(blobKey.getKeyString() + " " + url);
+    }
+    
+    public BlobKey removePhoto(final String url) {
+    	final Iterator<String> i =
+    		photoUrls.iterator();
+    	
+    	while (i.hasNext()) {
+    		final String entry = i.next();
+    		final String[] fields = entry.split("\\s+");
+    		final String blobKey = fields[0];
+    		final String photoUrl = fields[1];
+    		
+    		if (photoUrl.equals(url)) {
+    			i.remove();
+    			return new BlobKey(blobKey);
+    		}
+    	}
+    	
+    	return null;
+    }
     
 	public Key getKey() {
 		return key;

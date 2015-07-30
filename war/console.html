@@ -28,6 +28,76 @@
 		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
 
+		<script type="text/javascript">
+		function refreshProfilePhotos() {
+				$.get('/user/getUserInformation')
+				.done(function(data) {
+					$('#current-photos').empty();
+					
+					var json = JSON.parse(data);
+					var photoUrls = json["photoUrls"];
+					
+					$.each(photoUrls, function(index, value) {
+						var url = value.split(' ')[1];
+						$('#current-photos').append('<div class="profile-photo-container"><img class="profile-photo" src="' + url + '=s250" /><div class="delete" data-url="' + url + '"></div></div>');
+					});
+					
+					$('div.delete').click(function() {
+						var div = $(this);
+						var url = div.attr('data-url');
+						
+						$.post('/photos/delete', {'url': url})
+						.done(function(data) {
+							div.parent().remove();
+						});
+					});
+				});
+			}
+			
+
+			$(function() {
+				Dropzone.options.photoDropzone = {
+					init : function() {
+						this.on("success", function(file) {
+							refreshProfilePhotos();
+						});
+					}
+				};
+				
+				refreshProfilePhotos()
+			});
+		</script>
+		
+		<style>
+			.profile-photo-container {
+				position: relative;
+				display: inline-block;
+				margin: 15px;
+			}
+			
+			.profile-photo-container * {
+				-moz-box-sizing: border-box;
+				-webkit-box-sizing: border-box;
+				box-sizing: border-box;
+			}
+			
+			.profile-photo {
+				z-index: 9;
+				text-align: center;
+			}
+			
+			.delete {
+				background:
+					url('delete.png')
+					center center no-repeat;
+				position: absolute;
+				z-index: 10;
+				right: 10px; 
+				top: 10px;
+				width: 36px;
+				height: 36px;
+			}
+		</style>
 		
 		<title>bookstuf.com - console</title>
 	</head>
@@ -170,7 +240,8 @@
 				</section>
 
 				<section id="pictures-section" class="console-page">
-					<form action="/photos/upload" method="post" class="dropzone" id="photo-dropzone"></form>
+					<form action="/photos/upload" method="post" class="dropzone" id="photoDropzone"></form>
+					<div id="current-photos"></div>
 				</section>
 
 				<section id="fliers-section" class="console-page">
