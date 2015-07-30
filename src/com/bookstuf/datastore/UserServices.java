@@ -1,5 +1,7 @@
 package com.bookstuf.datastore;
 
+import java.util.LinkedList;
+
 import org.slim3.datastore.Attribute;
 import org.slim3.datastore.Model;
 
@@ -22,6 +24,9 @@ public class UserServices {
     private ChargePolicy chargePolicy;
     private CancellationPolicy cancellationPolicy;
 	private int cancellationDeadline;
+	
+	@Attribute(lob = true)
+	private LinkedList<Service> services;
 
 	public Key getKey() {
 		return key;
@@ -101,6 +106,14 @@ public class UserServices {
 
 	public void setZipcode(String zipcode) {
 		this.zipcode = zipcode;
+	}
+	
+	public LinkedList<Service> getServices() {
+		return services;
+	}
+
+	public void setServices(LinkedList<Service> services) {
+		this.services = services;
 	}
 
 	public ProviderInformationStatus getStatus() {

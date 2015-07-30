@@ -27,7 +27,7 @@ import com.google.inject.ProvisionException;
 public abstract class RpcServlet extends HttpServlet {
 	@Inject private Injector injector;
 	@Inject private Provider<RetryHelper> retryHelper;
-	@Inject private Gson gson;
+	@Inject protected Gson gson;
 	
 	private final HashMap<String, Method> methods;
 	private final HashMap<String, Publish> methodConfigurations;

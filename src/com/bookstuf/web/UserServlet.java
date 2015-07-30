@@ -1,8 +1,8 @@
 package com.bookstuf.web;
 
 import java.io.IOException;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -14,6 +14,7 @@ import org.slim3.datastore.Datastore;
 import com.bookstuf.GsonHelper;
 import com.bookstuf.appengine.NotLoggedInException;
 import com.bookstuf.appengine.UserService;
+import com.bookstuf.datastore.Service;
 import com.bookstuf.datastore.User;
 import com.bookstuf.datastore.UserInformation;
 import com.bookstuf.datastore.UserServices;
@@ -72,14 +73,14 @@ public class UserServlet extends RpcServlet {
 					request.getReader(),
 					userService.getCurrentUserInformation(t));
 
-			Datastore.put(userInformation);
+			Datastore.put(t, userInformation);
 
 			final User user =
 				userService.getCurrentUser(t);
 			
 			user.setProviderInformationStatus(userInformation.getStatus());
 			
-			Datastore.put(user);
+			Datastore.put(t, user);
 			
 			t.commit();
 			
@@ -120,14 +121,14 @@ public class UserServlet extends RpcServlet {
 					request.getReader(),
 					userService.getCurrentUserServices(t));
 			
-			Datastore.put(userServices);
+			Datastore.put(t, userServices);
 
 			final User user =
 				userService.getCurrentUser(t);
 			
 			user.setProviderServicesStatus(userServices.getStatus());
 			
-			Datastore.put(user);
+			Datastore.put(t, user);
 			
 			t.commit();
 			

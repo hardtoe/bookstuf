@@ -40,27 +40,31 @@ $(document).ready(function() {
     });
 });
 
-function setFormEnabled(form, enabled) {
+function setFormEnabled(form, disabled) {
 	// enable and fill in text fields
 	form.find('input[type=text], textarea').each(function(index) {
 		var input = $(this);
-		input.prop("disabled", enabled);
+		input.prop("disabled", disabled);
 	});
 
 	// enable and set radio buttons
 	form.find('label.mdl-radio').each(function(index) {
 		var label = $(this);
 		var input = label.find('input[type=radio]');
-		input.prop("disabled", enabled);
+		input.prop("disabled", disabled);
 	});
 		
 	// remove any disabled styling on the form elements
 	form.find('div, label').each(function(index){
-		$(this).removeClass('is-disabled');
+		if (disabled) {
+			$(this).addClass('is-disabled');
+		} else {
+			$(this).removeClass('is-disabled');
+		}
 	});
 	
 	// enable buttons
-	form.find('button').prop("disabled", enabled);
+	form.find('button').prop("disabled", disabled);
 }
 
 function enableForm(form) {
@@ -104,7 +108,7 @@ function hasUrlParameter(sParam) {
 
 // form data load and save
 $(function() {
-	$("form").each(function(index) {
+	$("div.form").each(function(index) {
 		var form = $(this);
 
 		// set loading indication

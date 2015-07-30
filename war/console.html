@@ -141,8 +141,8 @@
 				</section>
 				
 				<section id="services-section" class="console-page">
-					<form data-destination="/user/setUserServices" data-source="/user/getUserServices">
-						<h4>Services</h4>
+					<div class="form" data-destination="/user/setUserServices" data-source="/user/getUserServices">
+					<h4>Services</h4>
 						<p class="form-status"></p>
 						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
 							<textarea class="mdl-textfield__input" type="text" rows="3" id="aboutServices" disabled></textarea>
@@ -201,12 +201,42 @@
 						</label><br />
 							
 						<p class="form-status"></p>
-						<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect save-button" disabled>Save</button>
-					</form>
+						<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect save-button" disabled>Save</button>	
+					
+						<h5>Services</h5>
+						<div class="form-object-array" id="services">
+							<div class="form-object-array-template">
+								<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+									<input class="mdl-textfield__input" type="text" id="name" disabled /> 
+									<label class="mdl-textfield__label" for="name">Name</label>
+								</div><br />
+								<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+									<textarea class="mdl-textfield__input" type="text" rows="3" id="description" disabled></textarea>
+									<label class="mdl-textfield__label" for="description">Description</label>
+								</div><br />
+								<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+									<input class="mdl-textfield__input" type="number" id="cost" disabled /> 
+									<label class="mdl-textfield__label" for="cost">Price</label>
+								</div><br />
+								<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+									<input class="mdl-textfield__input" type="number" id="durationHours" disabled /> 
+									<label class="mdl-textfield__label" for="durationHours">Hours</label>
+								</div><br />
+								<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+									<input class="mdl-textfield__input" type="number" id="durationMinutes" disabled /> 
+									<label class="mdl-textfield__label" for="durationMinutes">Minutes</label>
+								</div><br />
+								<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect add-button" disabled>Add</button>
+								<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect edit-button" disabled>Edit</button>
+								<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect delete-button" disabled>Delete</button>
+							</div>
+						</div>
+					</div>
+					
 				</section>
 
 				<section id="information-section" class="console-page">
-					<form data-destination="/user/setUserInformation" data-source="/user/getUserInformation">
+					<div class="form" data-destination="/user/setUserInformation" data-source="/user/getUserInformation">
 						<h4>Information</h4>
 						<p class="form-status"></p>
 						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
@@ -236,7 +266,7 @@
 						
 						<p class="form-status"></p>
 						<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect save-button" disabled>Save</button>
-					</form>
+					</div>
 				</section>
 
 				<section id="pictures-section" class="console-page">
