@@ -106,11 +106,240 @@ function hasUrlParameter(sParam) {
     return false;
 }
 
+
+function clearForm(form) {
+	// clear text fields
+	form.find('input[type=text], textarea').each(function(index) {
+		var input = $(this);
+		input.val('');
+		input.parent().removeClass("is-dirty");
+	});
+	
+	// reset radio buttons to default value
+	form.find('label.mdl-radio.default-radio-button').each(function(index) {
+		var label = $(this);
+		var input = label.find('input[type=radio]');
+		label.click();
+	});
+}
+
+function saveForm(form) {
+	disableForm(form);
+	
+	// set saving indication
+	form.find('.form-status').each(function(index) {
+		var div = $(this);
+		div.removeClass('form-idle form-saved form-save-fail').addClass('form-saving');
+	});
+	
+	var data = getFormData(form, true);
+	
+	// post data
+	$.ajax({
+		type: "POST",
+		url: form.attr("data-destination"),
+		data: JSON.stringify(data),
+		dataType: "json"			
+	}).done(function(rsp) {
+		if (hasUrlParameter("destination")) {
+			// go back to account setup checklist
+			window.location.href = getUrlParameter("destination");
+			
+		} else {
+			// clear saving indication
+			form.find('.form-status').each(function(index) {
+				var div = $(this);
+				div.removeClass('form-saving').addClass('form-saved');
+			});
+		}
+		
+		
+	}).fail(function(rsp) {
+		// clear saving indication
+		form.find('.form-status').each(function(index) {
+			var div = $(this);
+			div.removeClass('form-saving').addClass('form-save-fail');
+		});
+		
+	}).always(function(rsp) {
+		enableForm(form);
+	});
+	
+	return false;
+}
+
+function registerFormArrayEntryHandlers(parentForm, entry) {
+	entry.find('.add-button').first().remove();
+	entry.removeClass('sub-form-array-template').addClass('sub-form-array-entry');
+	
+	entry.find('.delete-button').click(function(index) {
+		entry.remove();
+		saveForm(parentForm);
+	});
+	
+	entry.find('.save-button').click(function() {
+		saveForm(parentForm);
+	});
+}
+
+
+function setFormData(form, json, topLevel) {
+	// fill in text fields
+	var textInput = form.find("input[type=text], textarea");
+	
+	if (topLevel) {
+		textInput = textInput.not(".sub-form *, .sub-form-array-template *");
+	}
+	
+	textInput.each(function(index) {		
+		var input = $(this);
+		var id = input.attr("id").replace(/:.*/g, "");
+		
+		if (id in json) {
+			var value = json[id];
+			
+			input.val(value);
+			input.parent().addClass("is-dirty");
+		}
+	});
+
+	// set radio buttons
+	var radioInput = form.find("label.mdl-radio.is-checked");
+	
+	if (topLevel) {
+		radioInput = radioInput.not(".sub-form *, .sub-form-array-template *");
+	}
+	
+	radioInput.each(function(index) {
+		var label = $(this);
+		var input = label.find('input[type=radio]');
+		var name = input.attr("name").replace(/:.*/g, "");
+		
+		if (name in json) {		
+			var value = json[name];
+		
+			if (value === input.attr("value")) {
+				label.click();
+			}
+		}
+	});
+	
+	// set sub forms
+	form.find('.sub-form-array').not(".sub-form *").each(function(index) {
+		var subForm = $(this);
+		
+		if (subForm.attr('id') in json) {
+			var dataArray = json[subForm.attr('id')];
+			var template = subForm.find('.sub-form-array-template').first();
+			
+			jQuery.each(dataArray, function(index, item) {
+				var entry = cloneFormFromTemplate(index, template, false);
+
+				registerFormArrayEntryHandlers(form, entry);
+				
+				subForm.append(entry);	
+				setFormData(entry, item, false);
+			});
+		}
+	});
+}
+
+function getFormData(form, topLevel) {
+	// gather form data
+	var data = {};
+	
+	var textInput = form.find("input[type=text], textarea");
+	
+	if (topLevel) {
+		textInput = textInput.not(".sub-form *, .sub-form-array-template *");
+	}
+	
+	textInput.each(function(index) {
+		var input = $(this);	
+		var id = input.attr("id").replace(/:.*/g, "");
+		data[id] = input.val();
+	});
+	
+	var radioInput = form.find("label.mdl-radio.is-checked");
+	
+	if (topLevel) {
+		radioInput = radioInput.not(".sub-form *, .sub-form-array-template *");
+	}
+	
+	radioInput.each(function(index) {
+		var label = $(this);	
+		var input = label.find('input[type=radio]');
+		var name = input.attr("name").replace(/:.*/g, "");
+		data[name] = input.val();
+	});
+	
+	// get sub forms
+	form.find('.sub-form-array').each(function(index) {
+		var subFormArray = $(this);
+		var dataArray = [];
+	
+		subFormArray.find('.sub-form-array-entry').each(function(index) {
+			var entry = $(this);
+			dataArray.push(getFormData(entry, false));
+		});
+		
+		data[subFormArray.attr('id')] = dataArray;
+	});
+	
+	return data;
+}
+
+function renameIds(postfix, root) {
+	root.find('[id]').each(function(index){
+		var child = $(this);		
+		child.attr('id', child.attr('id') + ':' + postfix);
+	});
+	
+	root.find('[for]').each(function(index){
+		var child = $(this);		
+		child.attr('for', child.attr('for') + ':' + postfix);
+	});
+	
+	root.find('*').each(function(index){
+		var child = $(this);
+		renameIds(postfix, child);
+	});
+}
+
+/**
+ * Performs a deep clone of a template.  Fills in input fields of the clone 
+ * with the correct data.  Clears input fields of the template.
+ * 
+ * @param template Template element to clone from.
+ */
+function cloneFormFromTemplate(index, template, moveData) {
+	var clone = template.clone();
+	
+	clone.find('.is-upgraded, [data-upgraded]').each(function(index) {
+		var element = $(this);
+		element.removeClass('is-upgraded');
+		element.removeAttr('data-upgraded');
+	});
+	
+	clone.find('button .mdl-button__ripple-container').remove();
+	
+	if (moveData) {
+		setFormData(clone, getFormData(template, false), false);	
+		clearForm(template);
+	} else {
+		clearForm(clone);
+	}
+
+	renameIds(index, clone);
+	
+	return clone;
+}
+
 // form data load and save
 $(function() {
 	$("div.form").each(function(index) {
 		var form = $(this);
-
+		
 		// set loading indication
 		form.find('.form-status').each(function(index) {
 			var div = $(this);
@@ -118,104 +347,47 @@ $(function() {
 		});
 		
 		// load data
-		if (form.attr("data-source") != null) {
-			$.get(form.attr("data-source"))
-				.done(function(data) {
-					var json = JSON.parse(data);
+		$.get(
+			form.attr("data-source")
+		).done(function(data) {
+			var json = JSON.parse(data);
 
-					enableForm(form);
-					
-					// fill in text fields
-					form.find('input[type=text], textarea').each(function(index) {
-						var input = $(this);
-						var value = json[input.attr("id")];
-						
-						if (value) {
-							input.val(value);
-							input.parent().addClass("is-dirty");
-						}
-					});
+			enableForm(form);
+			setFormData(form, json, true);
 
-					// set radio buttons
-					form.find('label.mdl-radio').each(function(index) {
-						var label = $(this);
-						var input = label.find('input[type=radio]');
-						var value = json[input.attr("name")];
-						
-						if (value) {
-							if (value === input.attr("value")) {
-								label.click();
-							}
-						}
-					});
-					
-					// clear loading indication
-					form.find('.form-status').each(function(index) {
-						var div = $(this);
-						div.removeClass('form-loading').addClass('form-idle');
-					});
-				});
-		}
+			// clear loading indication
+			form.find('.form-status').each(function(index) {
+				var div = $(this);
+				div.removeClass('form-loading').addClass('form-idle');
+			});
+
+			componentHandler.upgradeDom();
+		});
 		
 		// save data
-		if (form.attr("data-destination") != null) {	
-			form.find('.save-button').click(function() {
-				disableForm(form);
+		form.find('.save-button').click(function() {
+			saveForm(form);
+		});
+		
+		// add entry
+		form.find('.sub-form-array').each(function(index) {
+			var subFormArray = $(this);
+
+			subFormArray.find('.sub-form-array-template').each(function(index) {
+				var template = $(this);
 				
-				// set saving indication
-				form.find('.form-status').each(function(index) {
-					var div = $(this);
-					div.removeClass('form-idle form-saved form-save-fail').addClass('form-saving');
-				});
-				
-				// gather form data
-				var data = {};
-				
-				form.find("input[type=text], textarea").each(function(index) {
-					var input = $(this);	
-					data[input.attr("id")] = input.val();
-				});
-				
-				form.find("label.mdl-radio.is-checked").each(function(index) {
-					var label = $(this);	
-					var input = label.find('input[type=radio]');
-					data[input.attr("name")] = input.val();
-				});
-				
-				// post data
-				$.ajax({
-					type: "POST",
-					url: form.attr("data-destination"),
-					data: JSON.stringify(data),
-					dataType: "json"
-						
-				}).done(function(rsp) {
-					if (hasUrlParameter("checklist")) {
-						// go back to account setup checklist
-						window.location.href = "checklist.html";
-						
-					} else {
-						// clear saving indication
-						form.find('.form-status').each(function(index) {
-							var div = $(this);
-							div.removeClass('form-saving').addClass('form-saved');
-						});
-					}
+				template.find('.add-button').click(function() {
+					var index = subFormArray.children('.sub-form-array-entry').length;
+					var entry = cloneFormFromTemplate(index, template, true);
 					
+					registerFormArrayEntryHandlers(form, entry);
 					
-				}).fail(function(rsp) {
-					// clear saving indication
-					form.find('.form-status').each(function(index) {
-						var div = $(this);
-						div.removeClass('form-saving').addClass('form-save-fail');
-					});
+					subFormArray.append(entry);
+					componentHandler.upgradeDom();
 					
-				}).always(function(rsp) {
-					enableForm(form);
+					saveForm(form);
 				});
-				
-				return false;
 			});
-		}
+		});
 	});
 });

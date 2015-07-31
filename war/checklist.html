@@ -93,20 +93,20 @@
 								$('#enter-information').html(checkmark);
 			
 							} else if (data["providerInformationStatus"] == "PARTIAL") {
-								$('#enter-information').html('<form action="console.html#information-section"><input type="hidden" name="checklist" value="true" /><button type="submit" class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect">Complete Information</button></form>')
+								$('#enter-information').html('<form action="console.html#information-section"><input type="hidden" name="destination" value="checklist.html" /><button type="submit" class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect">Complete Information</button></form>')
 	
 							} else {
-								$('#enter-information').html('<form action="console.html#information-section"><input type="hidden" name="checklist" value="true" /><button type="submit" class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect">Enter Information</button></form>')
+								$('#enter-information').html('<form action="console.html#information-section"><input type="hidden" name="destination" value="checklist.html" /><button type="submit" class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect">Enter Information</button></form>')
 							}	
 							
 							if (data["providerServicesStatus"] == "COMPLETE") {	
 								$('#enter-services').html(checkmark);
 			
 							} else if (data["providerServicesStatus"] == "PARTIAL") {
-								$('#enter-services').html('<form action="console.html#services-section"><input type="hidden" name="checklist" value="true" /><button type="submit" class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect">Complete Services</button></form>')
+								$('#enter-services').html('<form action="console.html#services-section"><input type="hidden" name="destination" value="checklist.html" /><button type="submit" class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect">Complete Services</button></form>')
 	
 							} else {
-								$('#enter-services').html('<form action="console.html#services-section"><input type="hidden" name="checklist" value="true" /><button type="submit" class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect">Enter Services</button></form>')
+								$('#enter-services').html('<form action="console.html#services-section"><input type="hidden" name="destination" value="checklist.html" /><button type="submit" class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect">Enter Services</button></form>')
 							}
 						}
 					});
