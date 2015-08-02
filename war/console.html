@@ -29,7 +29,7 @@
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
 
 		<script type="text/javascript">
-		function refreshProfilePhotos() {
+			function refreshProfilePhotos() {
 				$.get('/user/getUserInformation')
 				.done(function(data) {
 					$('#current-photos').empty();
@@ -141,7 +141,7 @@
 				</section>
 				
 				<section id="services-section" class="console-page">
-					<div class="form" data-destination="/user/setUserServices" data-source="/user/getUserServices">
+					<div class="form" data-destination="/user/setUserInformation" data-source="/user/getUserInformation">
 					<h4>Services</h4>
 						<p class="form-status"></p>
 						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
@@ -215,15 +215,15 @@
 									<label class="mdl-textfield__label" for="description">Description</label>
 								</div><br />
 								<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-									<input class="mdl-textfield__input" type="text" id="cost" value="50.00" disabled /> 
+									<input class="mdl-textfield__input" type="text" id="cost" disabled /> 
 									<label class="mdl-textfield__label" for="cost">Price</label>
 								</div><br />
 								<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-									<input class="mdl-textfield__input" type="text" id="durationHours" value="1" disabled /> 
+									<input class="mdl-textfield__input" type="text" id="durationHours" disabled /> 
 									<label class="mdl-textfield__label" for="durationHours">Hours</label>
 								</div><br />
 								<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-									<input class="mdl-textfield__input" type="text" id="durationMinutes" value="0" disabled /> 
+									<input class="mdl-textfield__input" type="text" id="durationMinutes" disabled /> 
 									<label class="mdl-textfield__label" for="durationMinutes">Minutes</label>
 								</div><br />
 								<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect add-button" disabled>Add</button>
@@ -231,8 +231,47 @@
 								<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect delete-button" disabled>Delete</button>
 							</div>
 						</div>
-					</div>
-					
+						
+						<h5>Availability</h5>
+						<div class="sub-form sub-form-array" id="availability">
+							<div class="sub-form-array-template">
+								<div class="group">    
+									<select id="dayOfTheWeek">
+										<option selected disabled></option>
+										<option value="MONDAY">Monday</option>
+										<option value="TUESDAY">Tuesday</option>
+										<option value="WEDNESDAY">Wednesday</option>
+										<option value="THURSDAY">Thursday</option>
+										<option value="FRIDAY">Friday</option>
+										<option value="SATURDAY">Saturday</option>
+										<option value="SUNDAY">Sunday</option>
+									</select>
+									<span class="bar"></span>
+									<label class="select-label">Day of the Week</label>
+								</div><br />
+								
+								<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+									<input class="mdl-textfield__input" type="text" id="startHour"disabled></input>
+									<label class="mdl-textfield__label" for="startHour">Start Hour</label>
+								</div><br />
+								<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+									<input class="mdl-textfield__input" type="text" id="startMinute"disabled /> 
+									<label class="mdl-textfield__label" for="startMinute">Start Minute</label>
+								</div><br />
+								<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+									<input class="mdl-textfield__input" type="text" id="endHour"disabled /> 
+									<label class="mdl-textfield__label" for="endHour">End Hour</label>
+								</div><br />
+								<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+									<input class="mdl-textfield__input" type="text" id="endMinute"disabled /> 
+									<label class="mdl-textfield__label" for="endMinute">End Minute</label>
+								</div><br />
+								<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect add-button" disabled>Add</button>
+								<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect save-button" disabled>Save</button>
+								<button class="mdl-button mdl-js-button mdl-button--accent mdl-js-ripple-effect delete-button" disabled>Delete</button>
+							</div>
+						</div>
+					</div>	
 				</section>
 
 				<section id="information-section" class="console-page">

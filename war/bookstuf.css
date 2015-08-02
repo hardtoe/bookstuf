@@ -31,6 +31,7 @@
 	display: block;
 }
 
+
 .form-status {
 
 }
@@ -53,4 +54,115 @@
 
 .form-save-fail::after {
 	content: "Error while saving! Try again later.";
+}
+
+
+/*****************************************************************************
+******************************************************************************
+* Material Design Select
+******************************************************************************
+*****************************************************************************/
+
+/* form starting stylings ------------------------------- */
+
+.group {
+  position: relative;
+  padding-top: 20px;
+  /*padding-bottom: 20px;*/
+}
+
+select:focus {
+  outline: none;
+}
+
+.select-label {
+	color: rgba(0, 0, 0, .26);
+	font-size: 16px;
+	font-weight: normal;
+	position: absolute;
+	pointer-events: none;
+	left: 0px;
+	top: 30px;
+	transition: 0.2s ease all;
+	-moz-transition: 0.2s ease all;
+	-webkit-transition: 0.2s ease all;
+}
+/* active state */
+select:focus ~ .select-label,
+select.valid ~ .select-label {
+	top: 7px;
+	font-size: 12px;
+	color: rgb(33,150,243);
+}
+/* BOTTOM BARS ================================= */
+
+.bar {
+  position: relative;
+  display: block;
+  width: 300px;
+}
+
+.bar:before,
+.bar:after {
+  content: '';
+  height: 2px;
+  width: 0;
+  bottom: 1px;
+  position: absolute;
+  background: rgb(33,150,243);
+  transition: 0.2s ease all;
+  -moz-transition: 0.2s ease all;
+  -webkit-transition: 0.2s ease all;
+}
+
+.bar:before {
+  left: 50%;
+}
+
+.bar:after {
+  right: 50%;
+}
+/* active state */
+
+select:focus ~ .bar:before,
+select:focus ~ .bar:after {
+  width: 50%;
+}
+
+/* ANIMATIONS ================ */
+
+
+
+
+
+
+
+
+
+/* http://stackoverflow.com/questions/1895476/how-to-style-a-select-dropdown-with-css-only-without-javascript */
+select {
+	border: none;
+	background: transparent;
+	padding: 5px 35px 5px 0px;
+	margin-left: 0px;
+	font-size: 16px;
+	height: 34px;
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	appearance: none;
+	/*background: url(/menu-down.png) no-repeat;
+	background-position: right 5px center;*/
+	border-bottom: 1px solid rgba(0, 0, 0, .12);
+	border-radius: 0px;
+	border-top: none;
+	border-left: none;
+	border-right: none;
+	width: 300px;
+}
+/*target Internet Explorer 9 and Internet Explorer 10:*/
+@media screen and (min-width:0\0) {
+	select {
+		background: none;
+		padding: 5px;
+	}
 }

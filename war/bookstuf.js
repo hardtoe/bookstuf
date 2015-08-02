@@ -41,8 +41,8 @@ $(document).ready(function() {
 });
 
 function setFormEnabled(form, disabled) {
-	// enable and fill in text fields
-	form.find('input[type=text], textarea').each(function(index) {
+	// enable and fill in text fields, select
+	form.find('input[type=text], textarea, select').each(function(index) {
 		var input = $(this);
 		input.prop("disabled", disabled);
 	});
@@ -121,6 +121,13 @@ function clearForm(form) {
 		var input = label.find('input[type=radio]');
 		label.click();
 	});
+	
+	// reset select fields to default value
+	form.find('select').each(function(index) {
+		var select = $(this);
+		select.val('');
+		select.removeClass('valid');
+	});
 }
 
 function saveForm(form) {
@@ -180,12 +187,14 @@ function registerFormArrayEntryHandlers(parentForm, entry) {
 	entry.find('.save-button').click(function() {
 		saveForm(parentForm);
 	});
+	
+	initializeSelect(entry);
 }
 
 
 function setFormData(form, json, topLevel) {
 	// fill in text fields
-	var textInput = form.find("input[type=text], textarea");
+	var textInput = form.find("input[type=text], textarea, select");
 	
 	if (topLevel) {
 		textInput = textInput.not(".sub-form *, .sub-form-array-template *");
@@ -194,11 +203,11 @@ function setFormData(form, json, topLevel) {
 	textInput.each(function(index) {		
 		var input = $(this);
 		var id = input.attr("id").replace(/:.*/g, "");
+		var value = json[id];
 		
-		if (id in json) {
-			var value = json[id];
-			
+		if (id in json && !(value === "")) {
 			input.val(value);
+			input.addClass('valid');
 			input.parent().addClass("is-dirty");
 		}
 	});
@@ -213,11 +222,10 @@ function setFormData(form, json, topLevel) {
 	radioInput.each(function(index) {
 		var label = $(this);
 		var input = label.find('input[type=radio]');
-		var name = input.attr("name").replace(/:.*/g, "");
+		var name = input.attr("name").replace(/:.*/g, "");	
+		var value = json[name];
 		
-		if (name in json) {		
-			var value = json[name];
-		
+		if (name in json && !(value === "")) {	
 			if (value === input.attr("value")) {
 				label.click();
 			}
@@ -248,7 +256,7 @@ function getFormData(form, topLevel) {
 	// gather form data
 	var data = {};
 	
-	var textInput = form.find("input[type=text], textarea");
+	var textInput = form.find("input[type=text], textarea, select");
 	
 	if (topLevel) {
 		textInput = textInput.not(".sub-form *, .sub-form-array-template *");
@@ -340,6 +348,9 @@ $(function() {
 	$("div.form").each(function(index) {
 		var form = $(this);
 		
+		// initialize select inputs
+		initializeSelect(form);
+		
 		// set loading indication
 		form.find('.form-status').each(function(index) {
 			var div = $(this);
@@ -391,3 +402,13 @@ $(function() {
 		});
 	});
 });
+
+// Material Design Select
+function initializeSelect(form) {
+	form.find('select').each(function(index){
+		$(this).on('change', function(ev) {
+			var newClass = $(this).children(':selected').attr('disabled') ? 'invalid' : 'valid';
+			$(this).attr('class', '').addClass(newClass);
+		});
+	})
+}

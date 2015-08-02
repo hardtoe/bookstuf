@@ -1,7 +1,6 @@
 package com.bookstuf.web;
 
 import java.io.IOException;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -14,10 +13,8 @@ import org.slim3.datastore.Datastore;
 import com.bookstuf.GsonHelper;
 import com.bookstuf.appengine.NotLoggedInException;
 import com.bookstuf.appengine.UserService;
-import com.bookstuf.datastore.Service;
 import com.bookstuf.datastore.User;
 import com.bookstuf.datastore.UserInformation;
-import com.bookstuf.datastore.UserServices;
 import com.google.appengine.api.datastore.Transaction;
 import com.google.identitytoolkit.GitkitClientException;
 import com.google.inject.Inject;
@@ -78,7 +75,8 @@ public class UserServlet extends RpcServlet {
 			final User user =
 				userService.getCurrentUser(t);
 			
-			user.setProviderInformationStatus(userInformation.getStatus());
+			user.setProviderInformationStatus(userInformation.getInformationStatus());
+			user.setProviderServicesStatus(userInformation.getServicesStatus());
 			
 			Datastore.put(t, user);
 			
@@ -102,54 +100,7 @@ public class UserServlet extends RpcServlet {
 	{
 		return userService.getCurrentUserInformation(null);	
 	}
-	
-	@Publish(autoRetryMillis = 30000)
-	private String setUserServices(
-		final HttpServletRequest request
-	) throws 
-		IOException, 
-		GitkitClientException, 
-		InterruptedException, 
-		ExecutionException 
-	{
-		final Transaction t =
-			Datastore.beginTransaction();
-			
-		try {				
-			final UserServices userServices =
-				gsonHelper.updateFromJson(
-					request.getReader(),
-					userService.getCurrentUserServices(t));
-			
-			Datastore.put(t, userServices);
 
-			final User user =
-				userService.getCurrentUser(t);
-			
-			user.setProviderServicesStatus(userServices.getStatus());
-			
-			Datastore.put(t, user);
-			
-			t.commit();
-			
-		} finally { 
-			if (t.isActive()) {
-				t.rollback();
-			}
-		}
-		
-		return "{}";
-	}
-	
-	@Publish(autoRetryMillis = 30000)
-	private UserServices getUserServices(
-		final HttpServletRequest request
-	) throws 
-		IOException, 
-		GitkitClientException
-	{
-		return userService.getCurrentUserServices(null);
-	}
 	
 	@ExceptionHandler(NotLoggedInException.class) 
 	private void handleNotLoggedInException(

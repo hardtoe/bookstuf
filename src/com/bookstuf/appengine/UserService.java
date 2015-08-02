@@ -7,12 +7,12 @@ import java.util.concurrent.Callable;
 import org.slim3.datastore.Datastore;
 import org.slim3.datastore.EntityNotFoundRuntimeException;
 
+import com.bookstuf.DatastoreHelper;
 import com.bookstuf.datastore.CancellationPolicy;
 import com.bookstuf.datastore.ChargePolicy;
 import com.bookstuf.datastore.ProviderInformationStatus;
 import com.bookstuf.datastore.User;
 import com.bookstuf.datastore.UserInformation;
-import com.bookstuf.datastore.UserServices;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Transaction;
@@ -83,27 +83,22 @@ public class UserService implements Serializable {
 			
 		} catch (final EntityNotFoundRuntimeException e) {
 			final UserInformation userInformation = new UserInformation();
+			
 			userInformation.setKey(userInformationKey);
 			userInformation.setPhotoUrls(new LinkedList<String>());
+			userInformation.setCancellationPolicy(CancellationPolicy.REFUND_IF_CANCEL_IN_TIME);
+			userInformation.setChargePolicy(ChargePolicy.CHARGE_AFTER);
+			
 			return userInformation;
 		}
 	}
 
-	public UserServices getCurrentUserServices(
-		final Transaction transaction
-	) {
-		final Key userServicesKey = 
-			getCurrentUserKey(UserServices.class);
-		
-		try {
-			return Datastore.get(transaction, UserServices.class, userServicesKey);
-			
-		} catch (final EntityNotFoundRuntimeException e) {
-			final UserServices userServices = new UserServices();
-			userServices.setKey(userServicesKey);
-			userServices.setCancellationPolicy(CancellationPolicy.REFUND_IF_CANCEL_IN_TIME);
-			userServices.setChargePolicy(ChargePolicy.CHARGE_AFTER);
-			return userServices;
-		}
+	public UserInformation getUserInformationByHandle(final String handle) {
+		return 
+			DatastoreHelper.getInstanceByProperty(
+				null, 
+				UserInformation.class, 
+				"handle", 
+				handle);
 	}
 }
