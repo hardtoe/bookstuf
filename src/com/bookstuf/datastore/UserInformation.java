@@ -11,6 +11,15 @@ import com.googlecode.objectify.annotation.Id;
 import com.googlecode.objectify.annotation.Index;
 import com.googlecode.objectify.annotation.Serialize;
 
+/*
+ *   // TODO: addressName
+  // TODO: photo
+  
+	
+	@Serialize LinkedList<Availability> availability;
+  
+  
+ */
 
 @Cache @Entity
 public class UserInformation {

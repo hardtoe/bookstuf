@@ -7,6 +7,7 @@ import com.bookstuf.web.PhotosServlet;
 import com.bookstuf.web.StripeServlet;
 import com.bookstuf.web.GitkitWidgetServlet;
 import com.bookstuf.web.UserServlet;
+import com.bookstuf.web.WarmupServlet;
 import com.google.inject.servlet.ServletModule;
 import com.googlecode.objectify.ObjectifyFilter;
 
@@ -22,6 +23,7 @@ class BookstufServletModule extends ServletModule {
 		serve("/user/*").with(UserServlet.class);
 		serve("/photos/*").with(PhotosServlet.class);
 		serve("/stripe").with(StripeServlet.class);
+		serve("/_ah/warmup").with(WarmupServlet.class);
 		
 		serve("/*").with(ServicesPageServlet.class);
 	}

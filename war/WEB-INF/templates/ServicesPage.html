@@ -1,0 +1,46 @@
+<html>
+  <body>
+    <h1>{{firstName}} {{lastName}}</h1>
+    <span class="handle">{{handle}}</span>
+    
+    <div class="contact-information">
+    	<span class="contact-name">{{firstName}} {{lastName}}</span>
+	    <span class="phone-number">{{phoneNumber}}</span>
+	    <a class="contact-email" href="mailto:{{contactEmail}}">{{contactEmail}}</a>
+	    <p class="about-professional">{{aboutMe}}</p>
+	    <img class="contact-photo" src="{{photo.url}}" />
+    </div>
+    
+    <div class="photo-gallery">
+    	{{#photoUrls}}
+    		<img class="photo" src="{{url}}" />
+    	{{/photoUrls}}
+    </div>
+    
+    <div class="location-address">
+    	<span class="address-name">{{addressName}}</span>
+    	<span class="address-line">{{addressLine1}}</span>
+    	<span class="address-line">{{addressLine2}}</span>
+    	<span class="address-line">{{city}}, {{state}} {{zipcode}}</span>
+    </div>
+
+    <div class="services">
+    	<p class="about-services">{{aboutServices}}</p>
+    	<div class="services-list">
+    		{{#services}}
+    			<div class="services-item">
+    				<span class="service-name">{{name}}</span>
+    				<span class="service-description">{{description}}</span>
+    				<span class="service-price">{{cost}}</span>
+    				<span class="service-duration">{{durationHours}} hours and {{durationMinutes}} minutes</span>
+    			</div>
+    		{{/services}}
+    	</div>
+    	<div class="services-policies">
+    		<span class="charge-policy">{{chargePolicy}}</span>
+    		<span class="cancellation-policy">{{cancellationPolicy}}</span>
+    		<span class="cancellation-deadline">{{cancellationDeadline}}</span>
+    	</div>
+    </div>
+  </body>
+</html>

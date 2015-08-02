@@ -41,7 +41,7 @@ public class ServicesPageServlet extends HttpServlet {
 	@Override
 	public void init() throws ServletException {
 		super.init();
-		this.template = mf.compile(new InputStreamReader(getServletContext().getResourceAsStream("/WEB-INF/templates/ServicesPage.mst")), "ServicesPage");	
+		this.template = mf.compile(new InputStreamReader(getServletContext().getResourceAsStream("/WEB-INF/templates/ServicesPage.html")), "ServicesPage");	
 	}
 	
 	@Override
