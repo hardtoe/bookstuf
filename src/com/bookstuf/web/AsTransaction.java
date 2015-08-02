@@ -7,6 +7,6 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface Publish {
-	public int withAutoRetryMillis() default 0;
+public @interface AsTransaction {
+
 }

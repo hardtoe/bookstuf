@@ -1,6 +1,13 @@
 <!doctype html>
 <html lang="en">
 	<head>
+		<script type="text/javascript">
+			// https redirect workaround for static files
+			if (window.location.protocol != "https:") {
+				window.location.replace(window.location.href.replace("http://", "https://").replace("//bookstuf.com", "//www.bookstuf.com"));
+			}
+		</script>
+		<meta name="google-site-verification" content="45XFs0yWCy-YBEDxnEPbVUKylejkI0GjYGYjeYm9aTA" />
 		<title>bookstuf.com</title>
 	</head>
 	

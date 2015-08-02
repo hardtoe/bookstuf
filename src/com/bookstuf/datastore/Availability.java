@@ -8,11 +8,11 @@ import java.io.Serializable;
 public class Availability implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
-	private DayOfTheWeek dayOfTheWeek;
-	private int startHour;
-	private int startMinute;
-	private int endHour;
-	private int endMinute;
+	DayOfTheWeek dayOfTheWeek;
+	int startHour;
+	int startMinute;
+	int endHour;
+	int endMinute;
 	
 	private void writeObject(
 		final ObjectOutputStream out

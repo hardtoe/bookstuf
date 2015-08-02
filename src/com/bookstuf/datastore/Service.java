@@ -9,11 +9,11 @@ import java.math.BigDecimal;
 public class Service implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
-	private String name;
-	private String description;
-	private BigDecimal cost;
-	private int durationHours;
-	private int durationMinutes;
+	String name;
+	String description;
+	BigDecimal cost;
+	int durationHours;
+	int durationMinutes;
 	
 	private void writeObject(
 		final ObjectOutputStream out

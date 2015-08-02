@@ -38,7 +38,7 @@
 					var photoUrls = json["photoUrls"];
 					
 					$.each(photoUrls, function(index, value) {
-						var url = value.split(' ')[1];
+						var url = value["url"];
 						$('#current-photos').append('<div class="profile-photo-container"><img class="profile-photo" src="' + url + '=s250" /><div class="delete" data-url="' + url + '"></div></div>');
 					});
 					

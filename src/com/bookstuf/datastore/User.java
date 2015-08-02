@@ -1,43 +1,30 @@
 package com.bookstuf.datastore;
 
-import org.slim3.datastore.Attribute;
-import org.slim3.datastore.Model;
-
 import com.bookstuf.PublicReadOnly;
-import com.google.appengine.api.datastore.Key;
+import com.googlecode.objectify.annotation.Cache;
+import com.googlecode.objectify.annotation.Entity;
+import com.googlecode.objectify.annotation.Id;
 
-@Model
-public class User {
-    @Attribute(primaryKey = true)
+@Cache @Entity
+public class User {  
     @PublicReadOnly
-    private Key key;
-
-    @PublicReadOnly
-    private String gitkitUserId;
+    @Id String gitkitUserId;
     
     @PublicReadOnly
-    private String gitkitUserEmail;
+    String gitkitUserEmail;
 
     @PublicReadOnly
-    private StripeConnectStatus stripeConnectStatus;
-	private String stripeUserId;
-    private String stripePublishableKey;
-    private String stripeAccessToken;
-    private String stripeRefreshToken;
+    StripeConnectStatus stripeConnectStatus;
+	String stripeUserId;
+    String stripePublishableKey;
+    String stripeAccessToken;
+    String stripeRefreshToken;
     
     @PublicReadOnly
-    private ProviderInformationStatus providerInformationStatus;
+    ProviderInformationStatus providerInformationStatus;
     
     @PublicReadOnly
-    private ProviderInformationStatus providerServicesStatus;
-    
-	public Key getKey() {
-		return key;
-	}
-
-	public void setKey(Key key) {
-		this.key = key;
-	}
+    ProviderInformationStatus providerServicesStatus;
 
 	public String getGitkitUserId() {
 		return gitkitUserId;

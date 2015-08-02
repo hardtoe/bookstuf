@@ -3,63 +3,72 @@ package com.bookstuf.datastore;
 import java.util.Iterator;
 import java.util.LinkedList;
 
-import org.slim3.datastore.Attribute;
-import org.slim3.datastore.Model;
-
 import com.bookstuf.PublicReadOnly;
 import com.google.appengine.api.blobstore.BlobKey;
-import com.google.appengine.api.datastore.Key;
+import com.googlecode.objectify.annotation.Cache;
+import com.googlecode.objectify.annotation.Entity;
+import com.googlecode.objectify.annotation.Id;
+import com.googlecode.objectify.annotation.Index;
+import com.googlecode.objectify.annotation.Serialize;
 
-@Model
+
+@Cache @Entity
 public class UserInformation {
-    @Attribute(primaryKey = true)
     @PublicReadOnly
-    private Key key;
+    @Id String gitkitUserId;
 
     // WARNING: Update status function when adding new field!
     
     // INFORMATION
-    private String handle;
-    private String firstName;
-    private String lastName;
-    private String phoneNumber;
-    private String contactEmail;
-    private String aboutMe;
+    @Index String handle;
+    @Index String firstName;
+    @Index String lastName;
+    @Index String phoneNumber;
+    @Index String contactEmail;
+    String aboutMe;
     
-    @Attribute(unindexed = true)
-    private LinkedList<String> photoUrls;
+    @Serialize LinkedList<PhotoUrl> photoUrls;
 
     // SERVICES
-    private String aboutServices;
-    private String addressLine1;
-    private String addressLine2;
-    private String city;
-    private String state;
-    private String zipcode;
-    private ChargePolicy chargePolicy;
-    private CancellationPolicy cancellationPolicy;
-	private int cancellationDeadline;
+    String aboutServices;
+    String addressLine1;
+    String addressLine2;
+    String city;
+    String state;
+    String zipcode;
+    ChargePolicy chargePolicy;
+    CancellationPolicy cancellationPolicy;
+	int cancellationDeadline;
 	
-	@Attribute(lob = true)
-	private LinkedList<Service> services;
+	@Serialize LinkedList<Service> services;
 	
-	@Attribute(lob = true)
-	private LinkedList<Availability> availability;
+	@Serialize LinkedList<Availability> availability;
 
-	
-    public void addPhoto(final BlobKey blobKey, final String url) {
-    	photoUrls.add(blobKey.getKeyString() + " " + url);
+    public void addPhoto(
+    	final BlobKey blobKey, 
+    	final String url
+    ) {
+    	photoUrls.add(new PhotoUrl(blobKey.getKeyString(), url));
+    }
+    
+    public boolean hasPhotoBlobKey(final BlobKey blobKey) {
+    	for (final PhotoUrl existingPhoto : photoUrls) {
+    		if (existingPhoto.getBlobKey().equals(blobKey)) {
+    			return true;
+    		}
+    	}
+    	
+    	return false;
     }
     
     public BlobKey removePhoto(final String url) {
-    	final Iterator<String> i =
+    	final Iterator<PhotoUrl> i =
     		photoUrls.iterator();
     	
     	while (i.hasNext()) {
-    		final String entry = i.next();
-    		final String[] fields = entry.split("\\s+");
-    		final String blobKey = fields[0];
-    		final String photoUrl = fields[1];
+    		final PhotoUrl entry = i.next();
+    		final String blobKey = entry.getBlobKey();
+    		final String photoUrl = entry.getUrl();
     		
     		if (photoUrl.equals(url)) {
     			i.remove();
@@ -69,13 +78,13 @@ public class UserInformation {
     	
     	return null;
     }
-    
-	public Key getKey() {
-		return key;
+
+	public String getGitkitUserId() {
+		return gitkitUserId;
 	}
 
-	public void setKey(Key key) {
-		this.key = key;
+	public void setGitkitUserId(final String gitkitUserId) {
+		this.gitkitUserId = gitkitUserId;
 	}
 
 	public String getHandle() {
@@ -126,11 +135,11 @@ public class UserInformation {
 		this.aboutMe = aboutMe;
 	}
 
-	public LinkedList<String> getPhotoUrls() {
+	public LinkedList<PhotoUrl> getPhotoUrls() {
 		return photoUrls;
 	}
 
-	public void setPhotoUrls(LinkedList<String> photoUrls) {
+	public void setPhotoUrls(LinkedList<PhotoUrl> photoUrls) {
 		this.photoUrls = photoUrls;
 	}
 

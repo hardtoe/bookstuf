@@ -15,8 +15,6 @@ import com.google.inject.Singleton;
 
 import javax.servlet.http.*;
 
-import org.slim3.datastore.Datastore;
-
 import com.bookstuf.appengine.NotLoggedInException;
 import com.bookstuf.appengine.RetryHelper;
 import com.bookstuf.appengine.UserService;
@@ -27,6 +25,9 @@ import com.bookstuf.external.StripeService.StripeConnectAuthorizationResponse;
 import com.google.identitytoolkit.GitkitClient;
 import com.google.identitytoolkit.GitkitClientException;
 import com.google.identitytoolkit.GitkitUser;
+import com.googlecode.objectify.VoidWork;
+
+import static com.googlecode.objectify.ObjectifyService.ofy;
 
 @Singleton
 @SuppressWarnings("serial")
@@ -59,9 +60,7 @@ public class StripeServlet extends HttpServlet {
 		final Future<StripeConnectAuthorizationResponse> stripeConnectAccount =
 			stripeService.get().connectAccountAsync(stripeAuthCode);
 		
-		// TODO: change this to the correct location or embed it into the stripe state
-		resp.setStatus(302);
-		resp.addHeader("Location", "https://www.bookstuf.com/checklist.html");
+		resp.encodeRedirectURL("https://www.bookstuf.com/checklist.html");
 
 		try {
 			final StripeConnectAuthorizationResponse stripeConnectRsp = 
@@ -73,29 +72,22 @@ public class StripeServlet extends HttpServlet {
 				new Callable<Void>() {
 					@Override
 					public Void call() {
-						final Transaction t = 
-							Datastore.beginTransaction();
-						
-						try {
-							final User user = 
-								userService.getCurrentUser(t);
-							
-							user.setStripeUserId(stripeConnectRsp.stripe_user_id);
-							user.setStripePublishableKey(stripeConnectRsp.stripe_publishable_key);
-							user.setStripeAccessToken(stripeConnectRsp.access_token);
-							user.setStripeRefreshToken(stripeConnectRsp.refresh_token);
-							user.setStripeConnectStatus(StripeConnectStatus.CONNECTED);
-							
-							Datastore.put(t, user);
-							
-							t.commit();
-							
-						} finally {
-						    if (t.isActive()) {
-						        t.rollback();
-						    }
-						}
-						
+						ofy().transactNew(0, new VoidWork() {
+							@Override
+							public void vrun() {
+								final User user = 
+									userService.getCurrentUser();
+								
+								user.setStripeUserId(stripeConnectRsp.stripe_user_id);
+								user.setStripePublishableKey(stripeConnectRsp.stripe_publishable_key);
+								user.setStripeAccessToken(stripeConnectRsp.access_token);
+								user.setStripeRefreshToken(stripeConnectRsp.refresh_token);
+								user.setStripeConnectStatus(StripeConnectStatus.CONNECTED);
+								
+								ofy().save().entity(user);
+							}
+						});
+
 						return null;
 					}		
 				}

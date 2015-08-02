@@ -10,7 +10,6 @@ import javax.servlet.http.HttpServletRequest;
 
 import com.google.identitytoolkit.GitkitClient;
 import com.google.identitytoolkit.GitkitClientException;
-import com.google.identitytoolkit.GitkitServerException;
 import com.google.identitytoolkit.GitkitUser;
 import com.google.inject.name.Named;
 import com.google.inject.Singleton;
@@ -24,11 +23,13 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.servlet.RequestScoped;
+import com.googlecode.objectify.ObjectifyFilter;
 
 public class BookstufLogicModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
+		bind(ObjectifyFilter.class).in(Singleton.class);
 		bind(URLFetchService.class).toInstance(URLFetchServiceFactory.getURLFetchService());
 		bind(KeyStore.class).to(DevKeyStore.class);
 	}

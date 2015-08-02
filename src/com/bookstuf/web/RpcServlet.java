@@ -1,12 +1,12 @@
 package com.bookstuf.web;
 
+import static com.googlecode.objectify.ObjectifyService.ofy;
+
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Type;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
@@ -16,32 +16,29 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.bookstuf.appengine.RetryHelper;
-import com.google.apphosting.api.ApiProxy;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonWriter;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Provider;
 import com.google.inject.ProvisionException;
+import com.googlecode.objectify.VoidWork;
 
 public abstract class RpcServlet extends HttpServlet {
+	private static final long serialVersionUID = 1L;
+	
 	@Inject private Injector injector;
 	@Inject private Provider<RetryHelper> retryHelper;
 	@Inject protected Gson gson;
 	
-	private final HashMap<String, Method> methods;
-	private final HashMap<String, Publish> methodConfigurations;
+	private final HashMap<String, Handler> handlers;
 	private final HashMap<Class<? extends Throwable>, Method> exceptionHandlers;
 	private Method defaultMethod;
 
 	private final ThreadLocal<Throwable> currentException;
 	
-	public RpcServlet(
-	) {
-		this.methods =
-			new HashMap<>();
-		
-		this.methodConfigurations =
+	public RpcServlet() {
+		this.handlers =
 			new HashMap<>();
 		
 		this.exceptionHandlers =
@@ -49,9 +46,7 @@ public abstract class RpcServlet extends HttpServlet {
 		
 		for (final Method m : getClass().getDeclaredMethods()) {
 			if (m.isAnnotationPresent(Publish.class)) {
-				methods.put(m.getName(), m);
-				methodConfigurations.put(m.getName(), m.getAnnotation(Publish.class));
-				m.setAccessible(true);
+				handlers.put(m.getName(), wrapInHandler(m));
 			}
 			
 			if (m.isAnnotationPresent(Default.class)) {
@@ -72,6 +67,33 @@ public abstract class RpcServlet extends HttpServlet {
 		this.currentException = new ThreadLocal<Throwable>();
 	}
 	
+	private Handler wrapInHandler(final Method m) {
+		m.setAccessible(true);
+		
+		final Publish methodConfiguration =
+			m.getAnnotation(Publish.class);
+		
+		Handler handler =
+			new Handler() {
+				@Override public void run(
+					final HttpServletRequest request,
+					final HttpServletResponse response
+				) {	
+					invoke(request, response, m);
+				}
+			};
+		
+		if (m.isAnnotationPresent(AsTransaction.class)) {
+			handler = wrapInTransaction(handler);
+		}
+		
+		if (methodConfiguration.withAutoRetryMillis() > 0) {
+			handler = wrapInAutoRetry(methodConfiguration.withAutoRetryMillis(), handler);
+		}
+		
+		return handler;
+	}
+
 	@Override
 	protected final void doGet(
 		final HttpServletRequest request,
@@ -110,33 +132,9 @@ public abstract class RpcServlet extends HttpServlet {
 			final String resource =
 				path[1];
 			
-			if (methods.containsKey(resource)) {
-				final Method m =
-					methods.get(resource);
-				
-				final Publish methodConfiguration =
-					methodConfigurations.get(resource);
-				
-				if (methodConfiguration.autoRetryMillis() > 0) {
-					try {
-					retryHelper.get().execute(
-						60000 - methodConfiguration.autoRetryMillis(), 
-						new Callable<Void>() {
-							@Override
-							public Void call() throws Exception {
-								invoke(request, response, m);
-								return null;
-							}
-						});
-					} catch (final Exception e) {
-						throw new RuntimeException(e);
-					}
-					
-				} else {
-					invoke(request, response, m);
-				}
-
-					
+			if (handlers.containsKey(resource)) {
+				handlers.get(resource).run(request, response);
+			
 			} else {
 				invoke(request, response, defaultMethod);
 			}
@@ -146,6 +144,51 @@ public abstract class RpcServlet extends HttpServlet {
 		}
 	}
 
+	private Handler wrapInAutoRetry(
+		final long autoRetryMillis, 
+		final Handler runnable
+	) {
+		return 
+			new Handler() {
+				@Override public void run(
+					final HttpServletRequest request,
+					final HttpServletResponse response
+				) {
+					try {
+						retryHelper.get().execute(
+							60000 - autoRetryMillis, 
+							new Callable<Void>() {
+								@Override
+								public Void call() throws Exception {
+									runnable.run(request, response);
+									return null;
+								}
+							});
+						
+					} catch (final Exception e) {
+						throw new RuntimeException(e);
+					}				
+				}
+			};
+	}
+	
+	private Handler wrapInTransaction(final Handler runnable) {
+		return 
+			new Handler() {
+				@Override public void run(
+					final HttpServletRequest request,
+					final HttpServletResponse response
+				) {
+					ofy().transactNew(0, new VoidWork() {		
+						@Override
+						public void vrun() {
+							runnable.run(request, response);
+						}
+					});								
+				}
+			};
+	}
+	
 	private void invoke(
 		final HttpServletRequest request, 
 		final HttpServletResponse response,
@@ -293,5 +336,12 @@ public abstract class RpcServlet extends HttpServlet {
 		}
 		
 		return null;
+	}
+	
+	private static abstract class Handler {
+		public abstract void run(
+			final HttpServletRequest request,
+			final HttpServletResponse response);
+		
 	}
 }

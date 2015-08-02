@@ -8,7 +8,7 @@ import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.slim3.datastore.Datastore;
+import static com.googlecode.objectify.ObjectifyService.ofy;
 
 import com.bookstuf.GsonHelper;
 import com.bookstuf.appengine.NotLoggedInException;
@@ -42,17 +42,17 @@ public class UserServlet extends RpcServlet {
 		response.setStatus(404);
 	}
 	
-	@Publish(autoRetryMillis = 30000)
+	@Publish(withAutoRetryMillis = 30000)
 	private User getCurrentUser(
 		final HttpServletRequest request
 	) throws 
 		GitkitClientException, 
 		IOException
 	{
-		return userService.getCurrentUser(null);
+		return userService.getCurrentUser();
 	}
 	
-	@Publish(autoRetryMillis = 30000)
+	@Publish(withAutoRetryMillis = 30000) @AsTransaction
 	private String setUserInformation(
 		final HttpServletRequest request
 	) throws 
@@ -60,45 +60,33 @@ public class UserServlet extends RpcServlet {
 		GitkitClientException, 
 		InterruptedException, 
 		ExecutionException
-	{
-		final Transaction t =
-			Datastore.beginTransaction();
-			
-		try {					
-			final UserInformation userInformation =
-				gsonHelper.updateFromJson(
-					request.getReader(),
-					userService.getCurrentUserInformation(t));
+	{			
+		final UserInformation userInformation =
+			gsonHelper.updateFromJson(
+				request.getReader(),
+				userService.getCurrentUserInformation());
 
-			Datastore.put(t, userInformation);
+		ofy().save().entity(userInformation);
 
-			final User user =
-				userService.getCurrentUser(t);
-			
-			user.setProviderInformationStatus(userInformation.getInformationStatus());
-			user.setProviderServicesStatus(userInformation.getServicesStatus());
-			
-			Datastore.put(t, user);
-			
-			t.commit();
-			
-		} finally { 
-			if (t.isActive()) {
-				t.rollback();
-			}
-		}
+		final User user =
+			userService.getCurrentUser();
+		
+		user.setProviderInformationStatus(userInformation.getInformationStatus());
+		user.setProviderServicesStatus(userInformation.getServicesStatus());
+		
+		ofy().save().entity(user);
 		
 		return "{}";
 	}
 	
-	@Publish(autoRetryMillis = 30000)
+	@Publish(withAutoRetryMillis = 30000)
 	private UserInformation getUserInformation(
 		final HttpServletRequest request
 	) throws 
 		IOException, 
 		GitkitClientException
 	{
-		return userService.getCurrentUserInformation(null);	
+		return userService.getCurrentUserInformation();	
 	}
 
 	

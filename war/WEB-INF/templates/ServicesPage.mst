@@ -1,0 +1,9 @@
+<html>
+  <body>
+    Mustache.java
+    <h1>{{firstName}} {{lastName}}</h1>
+    <ul>
+        {{handle}}
+    </ul>
+  </body>
+</html>
