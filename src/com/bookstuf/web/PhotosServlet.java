@@ -12,8 +12,8 @@ import javax.servlet.http.HttpServletResponse;
 import static com.googlecode.objectify.ObjectifyService.ofy;
 
 import com.bookstuf.appengine.NotLoggedInException;
-import com.bookstuf.appengine.UserService;
-import com.bookstuf.datastore.UserInformation;
+import com.bookstuf.appengine.UserManager;
+import com.bookstuf.datastore.ProfessionalInformation;
 import com.google.appengine.api.blobstore.BlobKey;
 import com.google.appengine.api.blobstore.BlobstoreService;
 import com.google.appengine.api.blobstore.BlobstoreServiceFactory;
@@ -31,7 +31,7 @@ import com.googlecode.objectify.Work;
 @SuppressWarnings("serial")
 public class PhotosServlet extends RpcServlet {
 	private final Logger logger;
-	private final UserService userService;
+	private final UserManager userService;
 	private final BlobstoreService blobstoreService;
 	private final ImagesService imagesService;
 	
@@ -39,7 +39,7 @@ public class PhotosServlet extends RpcServlet {
 	
 	@Inject PhotosServlet(
 		final Logger logger,
-		final UserService userService
+		final UserManager userService
 	) {
 		this.logger = logger;
 		this.userService = userService;
@@ -51,8 +51,8 @@ public class PhotosServlet extends RpcServlet {
 	private void delete(
 		@Param("url") final String url
 	) {       	    
-		final UserInformation userInformation =
-			userService.getCurrentUserInformation();
+		final ProfessionalInformation userInformation =
+			userService.getCurrentProfessionalInformation();
 
 		final BlobKey blobKey = 
 			userInformation.removePhoto(url);
@@ -73,8 +73,8 @@ public class PhotosServlet extends RpcServlet {
 	{
         boolean tooManyPhotos = false;
 
-		final UserInformation userInformation =
-			userService.getCurrentUserInformation();
+		final ProfessionalInformation userInformation =
+			userService.getCurrentProfessionalInformation();
 		
         final Map<String, List<BlobKey>> blobs = 
         	blobstoreService.getUploads(req);

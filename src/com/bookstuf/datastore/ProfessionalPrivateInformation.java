@@ -6,7 +6,7 @@ import com.googlecode.objectify.annotation.Entity;
 import com.googlecode.objectify.annotation.Id;
 
 @Cache @Entity
-public class User {  
+public class ProfessionalPrivateInformation {  
     @PublicReadOnly
     @Id String gitkitUserId;
     

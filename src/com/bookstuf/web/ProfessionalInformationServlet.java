@@ -11,30 +11,34 @@ import javax.servlet.http.HttpServletResponse;
 import static com.googlecode.objectify.ObjectifyService.ofy;
 
 import com.bookstuf.GsonHelper;
+import com.bookstuf.appengine.HandleToProfessionalInformationKeyMemcacheable;
 import com.bookstuf.appengine.NotLoggedInException;
-import com.bookstuf.appengine.UserService;
-import com.bookstuf.datastore.User;
-import com.bookstuf.datastore.UserInformation;
-import com.google.appengine.api.datastore.Transaction;
+import com.bookstuf.appengine.UserManager;
+import com.bookstuf.datastore.ProfessionalPrivateInformation;
+import com.bookstuf.datastore.ProfessionalInformation;
 import com.google.identitytoolkit.GitkitClientException;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.googlecode.objectify.Key;
 
 @Singleton
 @SuppressWarnings("serial")
-public class UserServlet extends RpcServlet {
+public class ProfessionalInformationServlet extends RpcServlet {
 	private final Logger logger;
-	private final UserService userService;
+	private final UserManager userService;
 	private final GsonHelper gsonHelper;
+	private final HandleToProfessionalInformationKeyMemcacheable handleToUserInformationKey;
 	
-	@Inject UserServlet(
+	@Inject ProfessionalInformationServlet(
 		final Logger logger,
-		final UserService userService,
-		final GsonHelper gsonHelper
+		final UserManager userService,
+		final GsonHelper gsonHelper,
+		final HandleToProfessionalInformationKeyMemcacheable handleToUserInformationKey
 	) {
 		this.logger = logger;
 		this.userService = userService;
 		this.gsonHelper = gsonHelper;
+		this.handleToUserInformationKey = handleToUserInformationKey;
 	}
 
 	@Default
@@ -43,13 +47,13 @@ public class UserServlet extends RpcServlet {
 	}
 	
 	@Publish(withAutoRetryMillis = 30000)
-	private User getCurrentUser(
+	private ProfessionalPrivateInformation getCurrentUser(
 		final HttpServletRequest request
 	) throws 
 		GitkitClientException, 
 		IOException
 	{
-		return userService.getCurrentUser();
+		return userService.getCurrentProfessionalPrivateInformation();
 	}
 	
 	@Publish(withAutoRetryMillis = 30000) @AsTransaction
@@ -61,32 +65,36 @@ public class UserServlet extends RpcServlet {
 		InterruptedException, 
 		ExecutionException
 	{			
-		final UserInformation userInformation =
+		final ProfessionalInformation userInformation =
 			gsonHelper.updateFromJson(
 				request.getReader(),
-				userService.getCurrentUserInformation());
+				userService.getCurrentProfessionalInformation());
 
 		ofy().save().entity(userInformation);
 
-		final User user =
-			userService.getCurrentUser();
+		final ProfessionalPrivateInformation user =
+			userService.getCurrentProfessionalPrivateInformation();
 		
 		user.setProviderInformationStatus(userInformation.getInformationStatus());
 		user.setProviderServicesStatus(userInformation.getServicesStatus());
 		
 		ofy().save().entity(user);
+
+		handleToUserInformationKey.updateCache(
+			userInformation.getHandle(), 
+			Key.create(ProfessionalInformation.class, userInformation.getGitkitUserId()));
 		
 		return "{}";
 	}
 	
 	@Publish(withAutoRetryMillis = 30000)
-	private UserInformation getUserInformation(
+	private ProfessionalInformation getUserInformation(
 		final HttpServletRequest request
 	) throws 
 		IOException, 
 		GitkitClientException
 	{
-		return userService.getCurrentUserInformation();	
+		return userService.getCurrentProfessionalInformation();	
 	}
 
 	

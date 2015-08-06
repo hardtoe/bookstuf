@@ -17,9 +17,9 @@ import javax.servlet.http.*;
 
 import com.bookstuf.appengine.NotLoggedInException;
 import com.bookstuf.appengine.RetryHelper;
-import com.bookstuf.appengine.UserService;
+import com.bookstuf.appengine.UserManager;
 import com.bookstuf.datastore.StripeConnectStatus;
-import com.bookstuf.datastore.User;
+import com.bookstuf.datastore.ProfessionalPrivateInformation;
 import com.bookstuf.external.StripeService;
 import com.bookstuf.external.StripeService.StripeConnectAuthorizationResponse;
 import com.google.identitytoolkit.GitkitClient;
@@ -35,13 +35,13 @@ public class StripeServlet extends HttpServlet {
 	private final Provider<RetryHelper> retryHelper;
 	private final Provider<StripeService> stripeService;
 	private Provider<GitkitUser> gitkitUser;
-	private UserService userService;
+	private UserManager userService;
 	
 	@Inject StripeServlet(
 		final Provider<RetryHelper> retryHelper, 
 		final Provider<StripeService> stripeService,
 		final Provider<GitkitUser> gitkitUser,
-		final UserService userService
+		final UserManager userService
 	) {
 		this.retryHelper = retryHelper;
 		this.stripeService = stripeService;
@@ -60,7 +60,7 @@ public class StripeServlet extends HttpServlet {
 		final Future<StripeConnectAuthorizationResponse> stripeConnectAccount =
 			stripeService.get().connectAccountAsync(stripeAuthCode);
 		
-		resp.encodeRedirectURL("https://www.bookstuf.com/checklist.html");
+		resp.sendRedirect("https://www.bookstuf.com/checklist.html");
 
 		try {
 			final StripeConnectAuthorizationResponse stripeConnectRsp = 
@@ -75,8 +75,8 @@ public class StripeServlet extends HttpServlet {
 						ofy().transactNew(0, new VoidWork() {
 							@Override
 							public void vrun() {
-								final User user = 
-									userService.getCurrentUser();
+								final ProfessionalPrivateInformation user = 
+									userService.getCurrentProfessionalPrivateInformation();
 								
 								user.setStripeUserId(stripeConnectRsp.stripe_user_id);
 								user.setStripePublishableKey(stripeConnectRsp.stripe_publishable_key);

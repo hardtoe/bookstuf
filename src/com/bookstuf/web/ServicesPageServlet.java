@@ -9,8 +9,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.bookstuf.appengine.UserService;
-import com.bookstuf.datastore.UserInformation;
+import com.bookstuf.appengine.UserManager;
+import com.bookstuf.datastore.ProfessionalInformation;
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
 import com.google.inject.Inject;
@@ -21,7 +21,7 @@ import com.google.inject.Singleton;
 public class ServicesPageServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	
-	private final Provider<UserService> userService;
+	private final Provider<UserManager> userService;
 	private final Logger logger;
 	
 	private final DefaultMustacheFactory mf;
@@ -29,7 +29,7 @@ public class ServicesPageServlet extends HttpServlet {
 
 	
 	@Inject ServicesPageServlet(
-		final Provider<UserService> userService,
+		final Provider<UserManager> userService,
 		final Logger logger
 	) {
 		this.userService = userService;
@@ -54,8 +54,8 @@ public class ServicesPageServlet extends HttpServlet {
 		final String handle =
 			req.getPathInfo().substring(1);
 		
-		final UserInformation userInformation =
-			userService.get().getUserInformationByHandle(handle);
+		final ProfessionalInformation userInformation =
+			userService.get().getProfessionalInformationByHandle(handle);
 		
 		if (userInformation != null) {
 		    template.execute(rsp.getWriter(), userInformation);

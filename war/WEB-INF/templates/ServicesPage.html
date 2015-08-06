@@ -42,5 +42,15 @@
     		<span class="cancellation-deadline">{{cancellationDeadline}}</span>
     	</div>
     </div>
+
+	<!-- format of availability data is going to change -->
+    <div class="general-availability">
+   		{{#availability}}
+   			<div class="availability-item">
+   				<span class="availability-day">{{dayOfTheWeek}}</span>
+   				<span class="availability-duration">{{startHour}}:{{startMinute}} - {{endHour}}:{{endMinute}}</span>
+   			</div>
+   		{{/availability}}
+    </div>
   </body>
 </html>

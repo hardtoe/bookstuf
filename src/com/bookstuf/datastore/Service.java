@@ -6,14 +6,15 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.math.BigDecimal;
 
+import org.threeten.bp.Duration;
+
 public class Service implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
 	String name;
 	String description;
 	BigDecimal cost;
-	int durationHours;
-	int durationMinutes;
+	Duration duration;
 	
 	private void writeObject(
 		final ObjectOutputStream out
@@ -24,8 +25,7 @@ public class Service implements Serializable {
 		out.writeObject(name);
 		out.writeObject(description);
 		out.writeObject(cost);
-		out.writeInt(durationHours);
-		out.writeInt(durationMinutes);
+		out.writeObject(duration);
 	}
 	
 	private void readObject(
@@ -38,8 +38,7 @@ public class Service implements Serializable {
 		name = (String) in.readObject();
 		description = (String) in.readObject();
 		cost = (BigDecimal) in.readObject();
-		durationHours = in.readInt();
-		durationMinutes = in.readInt();
+		duration = (Duration) in.readObject();
 	}
 	
 	public String getName() {
@@ -66,19 +65,11 @@ public class Service implements Serializable {
 		this.cost = cost;
 	}
 	
-	public int getDurationHours() {
-		return durationHours;
+	public Duration getDuration() {
+		return duration;
 	}
 	
-	public void setDurationHours(int durationHours) {
-		this.durationHours = durationHours;
-	}
-	
-	public int getDurationMinutes() {
-		return durationMinutes;
-	}
-	
-	public void setDurationMinutes(int durationMinutes) {
-		this.durationMinutes = durationMinutes;
+	public void setDuration(Duration duration) {
+		this.duration = duration;
 	}
 }

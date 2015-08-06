@@ -11,26 +11,22 @@ import com.googlecode.objectify.annotation.Id;
 import com.googlecode.objectify.annotation.Index;
 import com.googlecode.objectify.annotation.Serialize;
 
-/*
- *   // TODO: addressName
-  // TODO: photo
-  
-	
-	@Serialize LinkedList<Availability> availability;
-  
-  
- */
+// TODO: addressName
+// TODO: photo
+
+// TODO: limit how soon someone an book an appointment
+// TODO: limit how far out someone can book an appointment
+
 
 @Cache @Entity
-public class UserInformation {
+public class ProfessionalInformation {
     @PublicReadOnly
     @Id String gitkitUserId;
-
-    // WARNING: Update status function when adding new field!
     
     // INFORMATION
     @Index String handle;
     @Index String firstName;
+    @Index String middleName;
     @Index String lastName;
     @Index String phoneNumber;
     @Index String contactEmail;
