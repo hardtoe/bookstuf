@@ -17,6 +17,12 @@ public class Booking implements Serializable {
 	Service service;
 	LocalTime startTime;
 	
+	PaymentMethod paymentType;
+	String stripeCustomerId;
+	String stripeCardId;
+	
+	PaymentStatus paymentStatus;
+	
 	private void writeObject(
 		final ObjectOutputStream out
 	) throws 
@@ -27,6 +33,12 @@ public class Booking implements Serializable {
 		out.writeObject(consumer);
 		out.writeObject(service);
 		out.writeObject(startTime);
+		
+		out.writeObject(paymentType);
+		out.writeObject(stripeCustomerId);
+		out.writeObject(stripeCardId);
+		
+		out.writeObject(paymentStatus);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -41,6 +53,12 @@ public class Booking implements Serializable {
 		consumer = (Key<ConsumerInformation>) in.readObject();
 		service = (Service) in.readObject();
 		startTime = (LocalTime) in.readObject();
+		
+		paymentType = (PaymentMethod) in.readObject();
+		stripeCustomerId = (String) in.readObject();
+		stripeCardId = (String) in.readObject();
+		
+		paymentStatus = (PaymentStatus) in.readObject();
 	}
 
 	public Key<ProfessionalInformation> getProfessional() {
@@ -77,5 +95,37 @@ public class Booking implements Serializable {
 
 	public static long getSerialversionuid() {
 		return serialVersionUID;
+	}
+
+	public PaymentMethod getPaymentType() {
+		return paymentType;
+	}
+
+	public void setPaymentMethod(PaymentMethod paymentType) {
+		this.paymentType = paymentType;
+	}
+
+	public String getStripeCustomerId() {
+		return stripeCustomerId;
+	}
+
+	public void setStripeCustomerId(String stripeCustomerId) {
+		this.stripeCustomerId = stripeCustomerId;
+	}
+
+	public String getStripeCardId() {
+		return stripeCardId;
+	}
+
+	public void setStripeCardId(String stripeCardId) {
+		this.stripeCardId = stripeCardId;
+	}
+
+	public PaymentStatus getPaymentStatus() {
+		return paymentStatus;
+	}
+
+	public void setPaymentStatus(PaymentStatus paymentStatus) {
+		this.paymentStatus = paymentStatus;
 	}
 }

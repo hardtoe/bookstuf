@@ -8,6 +8,7 @@ import static com.googlecode.objectify.ObjectifyService.ofy;
 import com.bookstuf.Memcacheable;
 import com.bookstuf.datastore.CancellationPolicy;
 import com.bookstuf.datastore.ChargePolicy;
+import com.bookstuf.datastore.ConsumerInformation;
 import com.bookstuf.datastore.PhotoUrl;
 import com.bookstuf.datastore.ProviderInformationStatus;
 import com.bookstuf.datastore.ProfessionalPrivateInformation;
@@ -17,7 +18,9 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.googlecode.objectify.Key;
+import com.googlecode.objectify.LoadResult;
 import com.googlecode.objectify.NotFoundException;
+import com.googlecode.objectify.Result;
 
 @Singleton
 public class UserManager implements Serializable {
@@ -75,5 +78,36 @@ public class UserManager implements Serializable {
 
 	public ProfessionalInformation getProfessionalInformationByHandle(final String handle) {
 		return ofy().load().key(handleToUserInformationKey.get(handle)).now();
+	}
+
+	public Result<ConsumerInformation> getCurrentConsumerInformation() {
+		final LoadResult<ConsumerInformation> loadResult =
+			ofy().load().type(ConsumerInformation.class).id(gitkitUser.get().getLocalId());
+		
+		return new Result<ConsumerInformation>() {
+			private ConsumerInformation result = null;
+			
+			@Override
+			public ConsumerInformation now() {
+				if (result == null) {
+					try {
+						result = loadResult.safe();
+						
+					} catch (final NotFoundException e) {
+						final GitkitUser gitkitUserValue =
+							gitkitUser.get();
+						
+						final ConsumerInformation consumerInformation = new ConsumerInformation();
+						
+						consumerInformation.setGitkitUserId(gitkitUserValue.getLocalId());
+						consumerInformation.setContactEmail(gitkitUserValue.getEmail());
+						
+						result = consumerInformation;
+					}
+				}
+				
+				return result;
+			}
+		};
 	}
 }

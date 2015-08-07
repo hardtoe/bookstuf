@@ -2,12 +2,12 @@ package com.bookstuf.web;
 
 import java.io.IOException;
 import java.util.ConcurrentModificationException;
+import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.threeten.bp.LocalDate;
@@ -18,30 +18,32 @@ import static com.googlecode.objectify.ObjectifyService.ofy;
 import com.bookstuf.GsonHelper;
 import com.bookstuf.appengine.HandleToProfessionalInformationKeyMemcacheable;
 import com.bookstuf.appengine.NotLoggedInException;
+import com.bookstuf.appengine.RetryHelper;
 import com.bookstuf.appengine.StripeApi;
-import com.bookstuf.appengine.StripeApiBase;
 import com.bookstuf.appengine.UserManager;
 import com.bookstuf.datastore.Booking;
 import com.bookstuf.datastore.ConsumerInformation;
 import com.bookstuf.datastore.ConsumerDailyAgenda;
 import com.bookstuf.datastore.DailyAgenda;
-import com.bookstuf.datastore.ProfessionalPrivateInformation;
+import com.bookstuf.datastore.PaymentMethod;
+import com.bookstuf.datastore.PaymentStatus;
 import com.bookstuf.datastore.ProfessionalInformation;
 import com.bookstuf.datastore.Service;
 import com.google.appengine.api.datastore.DatastoreFailureException;
-import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.identitytoolkit.GitkitClientException;
 import com.google.identitytoolkit.GitkitUser;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.googlecode.objectify.Key;
-import com.googlecode.objectify.LoadResult;
 import com.googlecode.objectify.NotFoundException;
 import com.googlecode.objectify.Result;
+import com.googlecode.objectify.Work;
+import com.stripe.exception.StripeException;
+import com.stripe.model.Card;
 import com.stripe.model.Customer;
-import com.stripe.model.Refund;
 
 @Singleton
 @SuppressWarnings("serial")
@@ -49,23 +51,26 @@ public class BookingServlet extends RpcServlet {
 	private final Logger logger;
 	private final UserManager userService;
 	private final GsonHelper gsonHelper;
-	private final HandleToProfessionalInformationKeyMemcacheable handleToUserInformationKey;
 	private final Provider<GitkitUser> gitkitUser;
+	private final RetryHelper retryHelper;
 	private final StripeApi stripe;
+	private final Provider<ListeningExecutorService> execService;
 	
 	@Inject BookingServlet(
 		final Logger logger,
 		final UserManager userService,
 		final GsonHelper gsonHelper,
-		final HandleToProfessionalInformationKeyMemcacheable handleToUserInformationKey,
 		final Provider<GitkitUser> gitkitUser,
+		final RetryHelper retryHelper,
+		final Provider<ListeningExecutorService> execService,
 		final StripeApi stripe
 	) {
 		this.logger = logger;
 		this.userService = userService;
 		this.gsonHelper = gsonHelper;
-		this.handleToUserInformationKey = handleToUserInformationKey;
 		this.gitkitUser = gitkitUser;
+		this.retryHelper = retryHelper;
+		this.execService = execService;
 		this.stripe = stripe;
 	}
 
@@ -80,102 +85,246 @@ public class BookingServlet extends RpcServlet {
 		public LocalDate date;
 		public LocalTime startTime;
 		
+		public PaymentMethod paymentMethod;
+		
 		public boolean isNewStripeCustomer;
 		public String stripeToken;
 	}
 	
-	// TODO: initiate charge request for user
-	// TODO: handle cash-only transactions and add charge to professional account
-	// TODO: use custom retry and transaction code
-	@Publish(withAutoRetryMillis = 30000) @AsTransaction
+	private void handleCashPaymentMethod(
+		final Booking booking
+	) {
+		booking.setPaymentStatus(PaymentStatus.PENDING);
+		booking.setPaymentMethod(PaymentMethod.CASH);
+	}
+	
+	public static class ExpiredCardException extends Exception {
+		public final int expYear;
+		public final int expMonth;
+		
+		public ExpiredCardException(
+			final int expYear, 
+			final int expMonth
+		) {
+			this.expYear = expYear;
+			this.expMonth = expMonth;
+		}
+	}
+	
+	private void handleStripeCardPaymentMethod(
+		final Booking booking, 
+		final BookingRequest request
+	) throws Exception {
+		// generate idempotent keys for stripe requests
+		final String customerCreateIdemKey = UUID.randomUUID().toString();
+		final String customerRetrieveIdemKey = UUID.randomUUID().toString();
+		
+		retryHelper.execute(10000, new Callable<Void>() {
+			@Override
+			public Void call() throws Exception {
+				ofy().transactNew(0, new Work<Void>() {
+					@Override
+					public Void run() {
+						try {
+							final Result<ConsumerInformation> consumerInformationResult =
+								userService.getCurrentConsumerInformation();
+							
+							booking.setPaymentStatus(PaymentStatus.PENDING);
+							booking.setPaymentMethod(PaymentMethod.STRIPE_CARD);
+							
+							// create/retrieve customer from stripe
+							final Customer stripeCustomer = request.isNewStripeCustomer ?
+								stripe.customer().create().source(request.stripeToken).idempotencyKey(customerCreateIdemKey).get() :
+								stripe.customer().retrieve(consumerInformationResult.now().getStripeCustomerId()).idempotencyKey(customerRetrieveIdemKey).get();
+								
+							// save new customer id to the datastore
+							if (request.isNewStripeCustomer) {
+								final ConsumerInformation consumerInformation =
+									consumerInformationResult.now();
+								
+								consumerInformation.setStripeCustomerId(stripeCustomer.getId());
+			
+								ofy().save().entity(consumerInformation);
+							}
+							
+							// make sure default card won't expire before the appointment
+							final Card defaultCard = 
+								getDefaultCard(stripeCustomer);
+							
+							if (cardWillBeExpired(defaultCard, request.date)) {
+								throw new ExpiredCardException(
+									defaultCard.getExpYear().intValue(), 
+									defaultCard.getExpMonth().intValue());
+							}
+							
+							// set stripe billing information into the booking
+							booking.setStripeCustomerId(stripeCustomer.getId());
+							booking.setStripeCardId(defaultCard.getId());
+							
+							return null;
+							
+						} catch (final Exception e) {
+							throw new RuntimeException(e);
+						}
+					} // run
+				}); // ofy().transactionNew(Work)
+				
+				return null;
+			} // call
+		}); // retryHelper.execute(Callable)
+	}
+	
+
+	private ListenableFuture<Void> handlePaymentMethod(
+		final Booking booking, 
+		final BookingRequest request
+	) {
+		return execService.get().submit(new Callable<Void>() {
+			@Override
+			public Void call() throws Exception {		
+				if (request.paymentMethod == PaymentMethod.STRIPE_CARD) {
+					handleStripeCardPaymentMethod(booking, request);
+					
+				} else {
+					handleCashPaymentMethod(booking);
+				}
+				
+				return null;
+			}
+		});
+	}
+	
+	// TODO: initiate charge request for user in cron job, handle cash-only transactions and add charge to professional account
+	@Publish
 	private String book(
 		@RequestBody final BookingRequest request
-	) {	
-		// FIXME: use idempotent keys for stripe requests
+	) throws 
+		Exception 
+	{	
+		final Booking requestedBooking =
+			new Booking();
 		
-		// create customer with stripe if necessary
-		ListenableFuture<Customer> newStripeCustomerFuture;
+		
+		// payment can be handled in parallel.  it could take a long time for
+		// roundtrips to both datastore and stripe's servers if needed.
+		final ListenableFuture<Void> paymentMethodStatus =
+			handlePaymentMethod(requestedBooking, request);
 
-		if (request.isNewStripeCustomer) {
-			newStripeCustomerFuture = 
-				stripe.customer().create().source(request.stripeToken).send();
-		}
 		
-		// consumer information
+		// prepare some information outside of retriable transaction
 		final String consumerUserId =
 			gitkitUser.get().getLocalId();
 		
 		final Key<ConsumerInformation> consumerKey = 
 			Key.create(ConsumerInformation.class, consumerUserId);
 		
-		final Result<ConsumerInformation> consumerInformationResult =
-			userService.getCurrentConsumerInformation();
-		
-		// daily agendas
 		final Key<ProfessionalInformation> professionalKey = 
 			Key.create(ProfessionalInformation.class, request.professionalUserId);
 		
-		// these datastore requests are ordered this way to maximize parallelism
-		final Result<DailyAgenda> professionalDailyAgendaResult =
-			getProfessionalDailyAgenda(request.professionalUserId, request.date);
 		
-		final Result<ConsumerDailyAgenda> consumerDailyAgendaResult =
-			getConsumerDailyAgenda(consumerKey, consumerUserId, request.date);
-	
-		// extract the booking from the result
-		final Booking requestedBooking =
-			new Booking();
-		
+		// fill in booking information
 		requestedBooking.setProfessional(professionalKey);
 		requestedBooking.setConsumer(consumerKey);
 		requestedBooking.setService(request.service);
 		requestedBooking.setStartTime(request.startTime);
-		
-		// get the daily agendas ready
-		final DailyAgenda professionalDailyAgenda =
-			professionalDailyAgendaResult.now();
-		
-		final ConsumerDailyAgenda consumerDailyAgenda =
-			consumerDailyAgendaResult.now();
-		
-		// save new customer id to the datastore
-		if (request.isNewStripeCustomer) {
-			final ConsumerInformation consumerInformation =
-				consumerInformationResult.now();
-			
-			final Customer newStripeCustomer =
-				newStripeCustomerFuture.get();
-			
-			// FIXME: check for and handle bad response from stripe (like invalid card) and rollback transaction if needed
-			
-			consumerInformation.setStripeCustomerId(newStripeCustomer.getId());
 
-			ofy().save().entity(consumerInformation);
+		
+		return 
+			retryHelper.execute(10000, new Callable<String>() {
+
+				@Override
+				public String call() throws Exception {
+					return ofy().transactNew(0, new Work<String>() {
+						@Override
+						public String run() {
+							try {
+								// initiate fetch for daily agendas
+								final Result<DailyAgenda> professionalDailyAgendaResult =
+									getProfessionalDailyAgenda(request.professionalUserId, request.date);
+								
+								final Result<ConsumerDailyAgenda> consumerDailyAgendaResult =
+									getConsumerDailyAgenda(consumerKey, consumerUserId, request.date);
+				
+								
+								// wait for the daily agendas to be ready
+								final DailyAgenda professionalDailyAgenda =
+									professionalDailyAgendaResult.now();
+								
+								final ConsumerDailyAgenda consumerDailyAgenda =
+									consumerDailyAgendaResult.now();
+				
+								
+								// see if we can make the booking...
+								if (
+									professionalDailyAgenda.canAdd(requestedBooking) &&
+									consumerDailyAgenda.canAdd(requestedBooking)
+								) {
+									// ...make it if we can...
+									professionalDailyAgenda.add(requestedBooking);
+									consumerDailyAgenda.add(requestedBooking);
+				
+									// need to wait for payment method to finish updating the booking and give it an
+									// opportunity to throw an exception and cancel the booking
+									paymentMethodStatus.get();
+									
+									// professional daily agenda is used to remember that the card needs to be charged
+									ofy().save().entity(professionalDailyAgenda);
+									
+									ofy().save().entity(consumerDailyAgenda);
+									
+									// ...and report success
+									return "{\"success\": true}";
+									
+								} else {
+									ofy().getTransaction().rollbackAsync();
+									
+									// ...report failure if we can't
+									return "{\"alreadyBooked\": true}";
+								}
+							} catch(final Exception e) {
+								throw new RuntimeException(e);
+							}
+						}
+					});
+				}
+				
+			});
+		
+		
+
+	}
+
+	private Card getDefaultCard(
+		final Customer stripeCustomer
+	) throws 
+		StripeException 
+	{
+		final String defaultCardId = 
+			stripeCustomer.getDefaultCard();
+		
+		for (final Card card : stripeCustomer.getCards().getData()) {
+			if (card.getId().equals(defaultCardId)) {
+				return card;
+			}
 		}
 		
-		// see if we can make the booking...
-		if (
-			professionalDailyAgenda.canAdd(requestedBooking) &&
-			consumerDailyAgenda.canAdd(requestedBooking)
-		) {
-			// ...make it if we can...
-			professionalDailyAgenda.add(requestedBooking);
-			consumerDailyAgenda.add(requestedBooking);
-
-			ofy().save().entity(professionalDailyAgenda);
-			
-			// consumer daily agenda is used to remember that the card needs to be charged
-			ofy().save().entity(consumerDailyAgenda);
-			
-			// ...and report success
-			return "{\"success\": true}";
-			
-		} else {
-			ofy().getTransaction().rollbackAsync();
-			
-			// ...report failure if we can't
-			return "{\"alreadyBooked\": true}";
-		}
+		// didn't already have the card, need to fetch it
+		final Card defaultCard =
+			stripe.card().retrieve(stripeCustomer, defaultCardId).get();
+		
+		return defaultCard;
+	}
+	
+	private boolean cardWillBeExpired(
+		final Card card,
+		final LocalDate date
+	) {
+		return 
+			card.getExpYear().intValue() < date.getYear() ||
+			(
+				card.getExpYear().intValue() == date.getYear() &&
+				card.getExpMonth().intValue() < date.getMonthValue()
+			);
 	}
 
 	private Result<DailyAgenda> getProfessionalDailyAgenda(
@@ -229,6 +378,17 @@ public class BookingServlet extends RpcServlet {
 		};
 	}
 
+	
+	
+	@ExceptionHandler(ExpiredCardException.class) 
+	private void handleExpiredCardException(
+		final HttpServletResponse response
+	) throws 
+		IOException 
+	{
+		response.getWriter().println("{\"unableToProcessCard\": true}");
+	}
+	
 	@ExceptionHandler(DatastoreFailureException.class) 
 	private void handleDatastoreFailureException(
 		final HttpServletResponse response
@@ -245,6 +405,15 @@ public class BookingServlet extends RpcServlet {
 		IOException 
 	{
 		response.getWriter().println("{\"tryAgain\": true}");
+	}
+
+	@ExceptionHandler(StripeException.class) 
+	private void handleStripeException(
+		final HttpServletResponse response
+	) throws 
+		IOException 
+	{
+		response.getWriter().println("{\"unableToProcessCard\": true}");
 	}
 
 	@ExceptionHandler(NotLoggedInException.class) 

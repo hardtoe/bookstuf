@@ -105,14 +105,19 @@ public abstract class StripeApiBase {
 		}
 		
 		protected final HashMap<String, String> map(final String... pairs) {
-			final HashMap<String, String> map =
-				new HashMap<String, String>();
-			
-			for (int i = 0; i < pairs.length; i++) {
-				map.put(pairs[i], pairs[i + 1]);
+			if (pairs == null) {
+				return null;
+				
+			} else {
+				final HashMap<String, String> map =
+					new HashMap<String, String>();
+				
+				for (int i = 0; i < pairs.length; i++) {
+					map.put(pairs[i], pairs[i + 1]);
+				}
+				
+				return map;
 			}
-			
-			return map;
 		}
 	}
 }

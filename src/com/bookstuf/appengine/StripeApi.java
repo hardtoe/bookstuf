@@ -16,7 +16,6 @@ import com.stripe.model.ChargeRefundCollection;
 import com.stripe.model.Coupon;
 import com.stripe.model.CouponCollection;
 import com.stripe.model.Customer;
-import com.stripe.model.CustomerCardCollection;
 import com.stripe.model.CustomerCollection;
 import com.stripe.model.CustomerSubscriptionCollection;
 import com.stripe.model.DeletedAccount;
@@ -634,6 +633,46 @@ public class StripeApi extends StripeApiBase {
 		} // CreateMethod
 
 		/**
+		 * <h1>Retrieve a refund</h1>
+		 * <p>
+		 * By default, you can see the 10 most recent refunds stored directly on
+		 * the charge object, but you can also retrieve details about a specific
+		 * refund stored on the charge.
+		 * </p>
+		 * 
+		 * @param input
+		 *            Input object for this operation.
+		 * 
+		 * @param id
+		 *            ID of refund to retrieve.
+		 * 
+		 * @param charge
+		 *            ID of the charge refunded.
+		 * 
+		 */
+		public final RetrieveMethod retrieve(final Charge input,
+				final String id, final String charge) {
+			return new RetrieveMethod(input).set("id", id)
+					.set("charge", charge);
+		}
+
+		public final class RetrieveMethod extends
+				Method<Refund, RetrieveMethod> {
+			private final Charge input;
+
+			private RetrieveMethod(final Charge input) {
+				this.input = input;
+			}
+
+			@Override
+			public final Refund get() throws StripeException {
+				return input.getRefunds().retrieve((String) params().get("id"),
+						options());
+			}
+
+		} // RetrieveMethod
+
+		/**
 		 * <h1>Update a refund</h1>
 		 * <p>
 		 * Updates the specified refund by setting the values of the parameters
@@ -1229,6 +1268,42 @@ public class StripeApi extends StripeApiBase {
 		} // CreateMethod
 
 		/**
+		 * <h1>Retrieve a card</h1>
+		 * <p>
+		 * You can always see the 10 most recent cards directly on a customer,
+		 * recipient, or <a href="/docs/connect/managed-accounts">managed
+		 * account</a>; this method lets you retrieve details about a specific
+		 * card stored on the customer, recipient, or account.
+		 * </p>
+		 * 
+		 * @param input
+		 *            Input object for this operation.
+		 * 
+		 * @param id
+		 *            The ID of the card to be retrieved.
+		 * 
+		 */
+		public final RetrieveMethod retrieve(final Customer input,
+				final String id) {
+			return new RetrieveMethod(input).set("id", id);
+		}
+
+		public final class RetrieveMethod extends Method<Card, RetrieveMethod> {
+			private final Customer input;
+
+			private RetrieveMethod(final Customer input) {
+				this.input = input;
+			}
+
+			@Override
+			public final Card get() throws StripeException {
+				return (Card) input.getSources().retrieve(
+						(String) params().get("id"), options());
+			}
+
+		} // RetrieveMethod
+
+		/**
 		 * <h1>Update a card</h1>
 		 * <p>
 		 * If you need to update only some card details, like the billing
@@ -1609,6 +1684,47 @@ public class StripeApi extends StripeApiBase {
 			}
 
 		} // CreateMethod
+
+		/**
+		 * <h1>Retrieve a subscription</h1>
+		 * <p>
+		 * By default, you can see the 10 most recent active subscriptions
+		 * stored on a customer directly on the customer object, but you can
+		 * also retrieve details about a specific active subscription for a
+		 * customer.
+		 * </p>
+		 * 
+		 * @param input
+		 *            Input object for this operation.
+		 * 
+		 * @param id
+		 *            ID of subscription to retrieve.
+		 * 
+		 * @param customer
+		 * 
+		 * 
+		 */
+		public final RetrieveMethod retrieve(final Customer input,
+				final String id, final String customer) {
+			return new RetrieveMethod(input).set("id", id).set("customer",
+					customer);
+		}
+
+		public final class RetrieveMethod extends
+				Method<Subscription, RetrieveMethod> {
+			private final Customer input;
+
+			private RetrieveMethod(final Customer input) {
+				this.input = input;
+			}
+
+			@Override
+			public final Subscription get() throws StripeException {
+				return input.getSubscriptions().retrieve(
+						(String) params().get("id"), options());
+			}
+
+		} // RetrieveMethod
 
 		/**
 		 * <h1>Update a subscription</h1>
@@ -4004,6 +4120,46 @@ public class StripeApi extends StripeApiBase {
 		} // CreateMethod
 
 		/**
+		 * <h1>Retrieve a reversal</h1>
+		 * <p>
+		 * By default, you can see the 10 most recent reversals stored directly
+		 * on the transfer object, but you can also retrieve details about a
+		 * specific reversal stored on the transfer.
+		 * </p>
+		 * 
+		 * @param input
+		 *            Input object for this operation.
+		 * 
+		 * @param id
+		 *            ID of reversal to retrieve.
+		 * 
+		 * @param transfer
+		 *            ID of the transfer reversed.
+		 * 
+		 */
+		public final RetrieveMethod retrieve(final Transfer input,
+				final String id, final String transfer) {
+			return new RetrieveMethod(input).set("id", id).set("transfer",
+					transfer);
+		}
+
+		public final class RetrieveMethod extends
+				Method<Reversal, RetrieveMethod> {
+			private final Transfer input;
+
+			private RetrieveMethod(final Transfer input) {
+				this.input = input;
+			}
+
+			@Override
+			public final Reversal get() throws StripeException {
+				return input.getReversals().retrieve(
+						(String) params().get("id"), options());
+			}
+
+		} // RetrieveMethod
+
+		/**
 		 * <h1>Update a reversal</h1>
 		 * <p>
 		 * Updates the specified reversal by setting the values of the
@@ -4204,6 +4360,43 @@ public class StripeApi extends StripeApiBase {
 			}
 
 		} // CreateMethod
+
+		/**
+		 * <h1>Retrieve a bank account</h1>
+		 * <p>
+		 * By default, you can see the 10 most recent bank accounts stored on a
+		 * <a href="/docs/connect/managed-accounts">managed account</a> directly
+		 * on the Stripe account object, but you can also retrieve details about
+		 * a specific bank account stored on the Stripe account.
+		 * </p>
+		 * 
+		 * @param input
+		 *            Input object for this operation.
+		 * 
+		 * @param id
+		 * 
+		 * 
+		 */
+		public final RetrieveMethod retrieve(final Account input,
+				final String id) {
+			return new RetrieveMethod(input).set("id", id);
+		}
+
+		public final class RetrieveMethod extends
+				Method<ExternalAccount, RetrieveMethod> {
+			private final Account input;
+
+			private RetrieveMethod(final Account input) {
+				this.input = input;
+			}
+
+			@Override
+			public final ExternalAccount get() throws StripeException {
+				return input.getExternalAccounts().retrieve(
+						(String) params().get("id"), options());
+			}
+
+		} // RetrieveMethod
 
 		/**
 		 * <h1>Update a bank account</h1>
@@ -4574,13 +4767,16 @@ public class StripeApi extends StripeApiBase {
 		 * @param input
 		 *            Input object for this operation.
 		 * 
+		 * @param id
+		 *            ID of refund to retrieve.
+		 * 
 		 * @param fee
 		 *            ID of the application fee refunded.
 		 * 
 		 */
 		public final RetrieveMethod retrieve(final ApplicationFee input,
-				final String fee) {
-			return new RetrieveMethod(input).set("fee", fee);
+				final String id, final String fee) {
+			return new RetrieveMethod(input).set("id", id).set("fee", fee);
 		}
 
 		public final class RetrieveMethod extends

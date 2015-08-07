@@ -28,7 +28,7 @@ public abstract class RpcServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	
 	@Inject private Injector injector;
-	@Inject private Provider<RetryHelper> retryHelper;
+	@Inject private RetryHelper retryHelper;
 	@Inject protected Gson gson;
 	
 	private final HashMap<String, Handler> handlers;
@@ -155,7 +155,7 @@ public abstract class RpcServlet extends HttpServlet {
 					final HttpServletResponse response
 				) {
 					try {
-						retryHelper.get().execute(
+						retryHelper.execute(
 							60000 - autoRetryMillis, 
 							new Callable<Void>() {
 								@Override

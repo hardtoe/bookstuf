@@ -8,7 +8,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.inject.ProvisionException;
+import com.google.inject.Singleton;
 import com.google.appengine.api.taskqueue.DeferredTask;
 import com.google.appengine.api.taskqueue.Queue;
 import com.google.appengine.api.taskqueue.RetryOptions;
@@ -19,7 +21,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.name.Named;
 import com.google.inject.servlet.RequestScoped;
 
-@RequestScoped
+@Singleton
 public class RetryHelper {	
 	public static enum Status {
 		SUCCESS,
@@ -27,12 +29,12 @@ public class RetryHelper {
 	}
 
 	private final Logger logger;
-	private final ListeningExecutorService listeningExecService;
+	private final Provider<ListeningExecutorService> listeningExecService;
 	private final HashSet<Class<?>> retriableExceptions;
 	
 	@Inject RetryHelper(
 		final Logger logger,
-		final ListeningExecutorService listeningExecService,
+		final Provider<ListeningExecutorService> listeningExecService,
 		final @Named("retriable-exceptions") HashSet<Class<?>> retriableExceptions
 	) {
 		this.logger = logger;
@@ -53,7 +55,7 @@ public class RetryHelper {
 		final long millisToLeaveInReserve, 
 		final DeferredTask task
 	) {
-		return listeningExecService.submit(new Callable<Status>() {
+		return listeningExecService.get().submit(new Callable<Status>() {
 			@Override
 			public Status call() throws Exception {
 				return post(taskName, queue, taskAgeLimitSeconds, millisToLeaveInReserve, task);
@@ -126,7 +128,7 @@ public class RetryHelper {
 		final long millisToLeaveInReserve,
 		final Callable<T> callable
 	) {
-		return listeningExecService.submit(new Callable<T>() {
+		return listeningExecService.get().submit(new Callable<T>() {
 			@Override
 			public T call() throws Exception {
 				return execute(millisToLeaveInReserve, callable);

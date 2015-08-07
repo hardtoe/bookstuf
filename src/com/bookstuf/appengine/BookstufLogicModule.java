@@ -21,6 +21,7 @@ import com.google.appengine.api.urlfetch.URLFetchServiceFactory;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.inject.AbstractModule;
+import com.google.inject.Provider;
 import com.google.inject.Provides;
 import com.google.inject.servlet.RequestScoped;
 import com.googlecode.objectify.ObjectifyFilter;
@@ -38,8 +39,8 @@ public class BookstufLogicModule extends AbstractModule {
 		return Executors.newCachedThreadPool(ThreadManager.currentRequestThreadFactory());
 	}
 
-	@Provides @RequestScoped public ListeningExecutorService getListeningExecService(final ExecutorService threadPool) {
-		return MoreExecutors.listeningDecorator(threadPool);
+	@Provides @RequestScoped public ListeningExecutorService getListeningExecService(final Provider<ExecutorService> threadPool) {
+		return MoreExecutors.listeningDecorator(threadPool.get());
 	}
 	
 	@Provides @RequestScoped public GitkitUser getGitkitUser(
