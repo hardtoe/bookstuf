@@ -23,6 +23,98 @@ public class Booking implements Serializable {
 	
 	PaymentStatus paymentStatus;
 	
+	/* (non-Javadoc)
+	 * @see java.lang.Object#hashCode()
+	 */
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result
+				+ ((consumer == null) ? 0 : consumer.hashCode());
+		result = prime * result
+				+ ((paymentStatus == null) ? 0 : paymentStatus.hashCode());
+		result = prime * result
+				+ ((paymentType == null) ? 0 : paymentType.hashCode());
+		result = prime * result
+				+ ((professional == null) ? 0 : professional.hashCode());
+		result = prime * result + ((service == null) ? 0 : service.hashCode());
+		result = prime * result
+				+ ((startTime == null) ? 0 : startTime.hashCode());
+		result = prime * result
+				+ ((stripeCardId == null) ? 0 : stripeCardId.hashCode());
+		result = prime
+				* result
+				+ ((stripeCustomerId == null) ? 0 : stripeCustomerId.hashCode());
+		return result;
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null) {
+			return false;
+		}
+		if (!(obj instanceof Booking)) {
+			return false;
+		}
+		Booking other = (Booking) obj;
+		if (consumer == null) {
+			if (other.consumer != null) {
+				return false;
+			}
+		} else if (!consumer.equals(other.consumer)) {
+			return false;
+		}
+		if (paymentStatus != other.paymentStatus) {
+			return false;
+		}
+		if (paymentType != other.paymentType) {
+			return false;
+		}
+		if (professional == null) {
+			if (other.professional != null) {
+				return false;
+			}
+		} else if (!professional.equals(other.professional)) {
+			return false;
+		}
+		if (service == null) {
+			if (other.service != null) {
+				return false;
+			}
+		} else if (!service.equals(other.service)) {
+			return false;
+		}
+		if (startTime == null) {
+			if (other.startTime != null) {
+				return false;
+			}
+		} else if (!startTime.equals(other.startTime)) {
+			return false;
+		}
+		if (stripeCardId == null) {
+			if (other.stripeCardId != null) {
+				return false;
+			}
+		} else if (!stripeCardId.equals(other.stripeCardId)) {
+			return false;
+		}
+		if (stripeCustomerId == null) {
+			if (other.stripeCustomerId != null) {
+				return false;
+			}
+		} else if (!stripeCustomerId.equals(other.stripeCustomerId)) {
+			return false;
+		}
+		return true;
+	}
+
 	private void writeObject(
 		final ObjectOutputStream out
 	) throws 

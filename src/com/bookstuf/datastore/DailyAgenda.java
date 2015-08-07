@@ -65,7 +65,21 @@ public class DailyAgenda {
 		bookings.put(newBooking.getStartTime(), newBooking);
 	}
 	
-	public boolean canAdd(final Booking newBooking) {
+	public boolean canAdd(final Booking newBooking) {		
+		// special case, booking is exactly the same, return true
+		// this behavior is needed to make booking transactions 
+		// idempotent in the datastore and safe to retry
+		final Booking sameBooking =
+			bookings.get(newBooking.getStartTime());
+		
+		if (
+			sameBooking != null && 
+			sameBooking.equals(newBooking)
+		) {
+			return true;
+		}
+		
+		// check for earlier bookings that overlap
 		final Entry<LocalTime, Booking> earlierBooking = 
 			bookings.floorEntry(newBooking.getStartTime());
 		
@@ -76,6 +90,7 @@ public class DailyAgenda {
 			return false;
 		}
 		
+		// check for later bookings that overlap
 		final Entry<LocalTime, Booking> laterBooking =
 			bookings.ceilingEntry(newBooking.getStartTime());
 		

@@ -194,6 +194,9 @@ public class BookingServlet extends RpcServlet {
 		});
 	}
 	
+	// TODO: need servlet method to retrieve card summary information for user to select which card to use
+	// TODO: consolidate error reporting format
+	// TODO: need to create handlers for all individual StripeException subclasses
 	// TODO: initiate charge request for user in cron job, handle cash-only transactions and add charge to professional account
 	@Publish
 	private String book(
@@ -211,7 +214,8 @@ public class BookingServlet extends RpcServlet {
 			handlePaymentMethod(requestedBooking, request);
 
 		
-		// prepare some information outside of retriable transaction
+		// need to prepare as much information outside of transaction as 
+		// possible to ensure transaction can execute as fast as possible
 		final String consumerUserId =
 			gitkitUser.get().getLocalId();
 		
@@ -231,7 +235,6 @@ public class BookingServlet extends RpcServlet {
 		
 		return 
 			retryHelper.execute(10000, new Callable<String>() {
-
 				@Override
 				public String call() throws Exception {
 					return ofy().transactNew(0, new Work<String>() {
@@ -252,7 +255,13 @@ public class BookingServlet extends RpcServlet {
 								
 								final ConsumerDailyAgenda consumerDailyAgenda =
 									consumerDailyAgendaResult.now();
-				
+								
+								
+								// need to wait for payment method to finish updating the booking 
+								// with payment information and give it the opportunity to throw 
+								// an exception and cancel the booking
+								paymentMethodStatus.get();
+								
 								
 								// see if we can make the booking...
 								if (
@@ -262,14 +271,11 @@ public class BookingServlet extends RpcServlet {
 									// ...make it if we can...
 									professionalDailyAgenda.add(requestedBooking);
 									consumerDailyAgenda.add(requestedBooking);
-				
-									// need to wait for payment method to finish updating the booking and give it an
-									// opportunity to throw an exception and cancel the booking
-									paymentMethodStatus.get();
 									
-									// professional daily agenda is used to remember that the card needs to be charged
+									// professional daily agenda is used to manage booking payment
+									
+									// save agendas back to the datastore
 									ofy().save().entity(professionalDailyAgenda);
-									
 									ofy().save().entity(consumerDailyAgenda);
 									
 									// ...and report success
