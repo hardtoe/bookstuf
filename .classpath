@@ -19,6 +19,8 @@
 	<classpathentry kind="lib" path="war/WEB-INF/lib/threetenbp-1.3.jar" sourcepath="/Users/lvalenty/Downloads/threetenbp-1.3-sources.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/joda-time-2.8.1.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/stripe-java-1.33.0.jar" sourcepath="/Users/lvalenty/Downloads/stripe-java-1.33.0"/>
+	<classpathentry kind="lib" path="war/WEB-INF/lib/appengine-mapreduce-0.8.4.jar"/>
+	<classpathentry kind="lib" path="war/WEB-INF/lib/appengine-pipeline-0.2.12.jar"/>
 	<classpathentry kind="con" path="com.google.appengine.eclipse.core.GAE_CONTAINER"/>
 	<classpathentry kind="output" path="war/WEB-INF/classes"/>
 </classpath>

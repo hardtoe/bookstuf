@@ -17,7 +17,7 @@ public class Booking implements Serializable {
 	Service service;
 	LocalTime startTime;
 	
-	PaymentMethod paymentType;
+	PaymentMethod paymentMethod;
 	String stripeCustomerId;
 	String stripeCardId;
 	
@@ -35,7 +35,7 @@ public class Booking implements Serializable {
 		result = prime * result
 				+ ((paymentStatus == null) ? 0 : paymentStatus.hashCode());
 		result = prime * result
-				+ ((paymentType == null) ? 0 : paymentType.hashCode());
+				+ ((paymentMethod == null) ? 0 : paymentMethod.hashCode());
 		result = prime * result
 				+ ((professional == null) ? 0 : professional.hashCode());
 		result = prime * result + ((service == null) ? 0 : service.hashCode());
@@ -74,7 +74,7 @@ public class Booking implements Serializable {
 		if (paymentStatus != other.paymentStatus) {
 			return false;
 		}
-		if (paymentType != other.paymentType) {
+		if (paymentMethod != other.paymentMethod) {
 			return false;
 		}
 		if (professional == null) {
@@ -126,7 +126,7 @@ public class Booking implements Serializable {
 		out.writeObject(service);
 		out.writeObject(startTime);
 		
-		out.writeObject(paymentType);
+		out.writeObject(paymentMethod);
 		out.writeObject(stripeCustomerId);
 		out.writeObject(stripeCardId);
 		
@@ -146,7 +146,7 @@ public class Booking implements Serializable {
 		service = (Service) in.readObject();
 		startTime = (LocalTime) in.readObject();
 		
-		paymentType = (PaymentMethod) in.readObject();
+		paymentMethod = (PaymentMethod) in.readObject();
 		stripeCustomerId = (String) in.readObject();
 		stripeCardId = (String) in.readObject();
 		
@@ -189,12 +189,12 @@ public class Booking implements Serializable {
 		return serialVersionUID;
 	}
 
-	public PaymentMethod getPaymentType() {
-		return paymentType;
+	public PaymentMethod getPaymentMethod() {
+		return paymentMethod;
 	}
 
 	public void setPaymentMethod(PaymentMethod paymentType) {
-		this.paymentType = paymentType;
+		this.paymentMethod = paymentType;
 	}
 
 	public String getStripeCustomerId() {

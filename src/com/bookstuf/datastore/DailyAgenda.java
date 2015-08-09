@@ -2,6 +2,7 @@ package com.bookstuf.datastore;
 
 import java.util.Collection;
 import java.util.Map.Entry;
+import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.threeten.bp.LocalDate;
@@ -22,6 +23,7 @@ public class DailyAgenda {
 	@Serialize TreeMap<LocalTime, Booking> bookings;
 	
 	@Index int numBookings;
+	@Index boolean hasBookings;
 	
 	public DailyAgenda() {
 		this.bookings = new TreeMap<LocalTime, Booking>();
@@ -118,5 +120,10 @@ public class DailyAgenda {
 	
 	@OnSave public void onSave() {
 		numBookings = bookings.size();
+		hasBookings = numBookings > 0;
+	}
+
+	public TreeMap<LocalTime, Booking> bookingMap() {
+		return bookings;
 	}
 }

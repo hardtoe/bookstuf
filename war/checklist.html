@@ -1,11 +1,21 @@
 <!doctype html>
 <html lang="en">
 	<head>
+		<script type="text/javascript">
+			// https redirect workaround for static files
+			if (window.location.protocol != "https:") {
+				window.location.replace(window.location.href.replace("http://", "https://").replace("//bookstuf.com", "//www.bookstuf.com"));
+			}
+		</script>
+		
 		<meta http-equiv="content-type" content="text/html; charset=UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		
 		<!-- jQuery -->
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+		
+		<!-- Hogan -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/hogan.js/3.0.2/hogan.min.js"></script>
 		
 		<!-- JavaScript Cookie -->
 		<script src="cookie.js"></script>

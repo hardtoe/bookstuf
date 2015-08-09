@@ -5,10 +5,12 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
+import org.threeten.bp.DayOfWeek;
+
 public class Availability implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
-	DayOfTheWeek dayOfTheWeek;
+	DayOfWeek dayOfTheWeek;
 	int startHour;
 	int startMinute;
 	int endHour;
@@ -34,18 +36,18 @@ public class Availability implements Serializable {
 		ClassNotFoundException 
 	{
 		in.readLong(); // version
-		dayOfTheWeek = (DayOfTheWeek) in.readObject();
+		dayOfTheWeek = (DayOfWeek) in.readObject();
 		startHour = in.readInt();
 		startMinute = in.readInt();
 		endHour = in.readInt();
 		endMinute = in.readInt();
 	}
 
-	public DayOfTheWeek getDayOfTheWeek() {
+	public DayOfWeek getDayOfTheWeek() {
 		return dayOfTheWeek;
 	}
 
-	public void setDayOfTheWeek(DayOfTheWeek dayOfTheWeek) {
+	public void setDayOfTheWeek(DayOfWeek dayOfTheWeek) {
 		this.dayOfTheWeek = dayOfTheWeek;
 	}
 

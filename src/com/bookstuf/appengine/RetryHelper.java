@@ -20,6 +20,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.name.Named;
 import com.google.inject.servlet.RequestScoped;
+import com.googlecode.objectify.Work;
+
+import static com.googlecode.objectify.ObjectifyService.ofy;
 
 @Singleton
 public class RetryHelper {	
@@ -136,6 +139,30 @@ public class RetryHelper {
 		});
 	}
 
+	public <T> T transactNew(
+		final long millisToLeaveInReserve,
+		final Callable<T> callable
+	) throws 
+		Exception 
+	{
+		return execute(millisToLeaveInReserve, new Callable<T>() {
+			@Override
+			public T call() throws Exception {
+				return ofy().transactNew(0, new Work<T>() {
+					@Override
+					public T run() {
+						try {
+							return callable.call();
+							
+						} catch(final Exception e) {
+							throw new RuntimeException();
+						}
+					}
+				});
+			}
+		});
+	}
+	
 	public <T> T execute(
 		final long millisToLeaveInReserve,
 		final Callable<T> callable
