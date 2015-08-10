@@ -5,8 +5,13 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
+import com.bookstuf.PublicReadOnly;
+
 public class PhotoUrl implements Serializable {
 	private static final long serialVersionUID = 1L;
+	
+	@PublicReadOnly
+	int version = 1;
 	
 	String blobKey;
 	String url;
@@ -25,7 +30,7 @@ public class PhotoUrl implements Serializable {
 	) throws 
 		IOException 
 	{
-		out.writeLong(serialVersionUID);
+		out.writeInt(version);
 		out.writeObject(blobKey);
 		out.writeObject(url);
 	}
@@ -36,7 +41,7 @@ public class PhotoUrl implements Serializable {
 		IOException, 
 		ClassNotFoundException 
 	{
-		in.readLong(); // version
+		version = in.readInt(); // version
 		blobKey = (String) in.readObject();
 		url = (String) in.readObject();
 	}

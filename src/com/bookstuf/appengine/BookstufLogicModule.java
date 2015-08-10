@@ -1,5 +1,6 @@
 package com.bookstuf.appengine;
 
+import java.lang.reflect.Type;
 import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
@@ -8,6 +9,20 @@ import java.util.concurrent.Executors;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
+import org.junit.Test;
+import org.threeten.bp.LocalDate;
+import org.threeten.bp.LocalTime;
+import org.threeten.bp.format.DateTimeFormatter;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 import com.google.identitytoolkit.GitkitClient;
 import com.google.identitytoolkit.GitkitClientException;
 import com.google.identitytoolkit.GitkitUser;
@@ -27,12 +42,81 @@ import com.google.inject.servlet.RequestScoped;
 import com.googlecode.objectify.ObjectifyFilter;
 
 public class BookstufLogicModule extends AbstractModule {
-
 	@Override
 	protected void configure() {
 		bind(ObjectifyFilter.class).in(Singleton.class);
 		bind(URLFetchService.class).toInstance(URLFetchServiceFactory.getURLFetchService());
 		bind(KeyStore.class).to(DevKeyStore.class);
+	}
+	
+	@Test public void testDateParsing() {
+		final DateTimeFormatter dateFormat =
+			DateTimeFormatter.ofPattern("M-d-yyyy");
+		
+		final String date = "8-8-2015";
+		
+		
+		System.out.println(LocalDate.parse(date, dateFormat));
+	}
+	
+	@Provides @Singleton public Gson getGson() {
+		final GsonBuilder gsonBuilder =
+			new GsonBuilder();
+
+		final DateTimeFormatter dateFormat =
+			DateTimeFormatter.ofPattern("M/d/yyyy");
+		
+		gsonBuilder.registerTypeAdapter(LocalDate.class, new JsonSerializer<LocalDate>() {
+			@Override
+			public JsonElement serialize(
+				final LocalDate src, 
+				final Type typeOfSrc,
+				final JsonSerializationContext context
+			) {
+				return new JsonPrimitive(src.format(dateFormat));
+			}
+		});
+		
+		gsonBuilder.registerTypeAdapter(LocalDate.class, new JsonDeserializer<LocalDate>() {
+			@Override
+			public LocalDate deserialize(
+				final JsonElement json, 
+				final Type typeOfSrc,
+				final JsonDeserializationContext context
+			) throws JsonParseException {
+				final String date =
+					json.getAsJsonPrimitive().getAsString();
+				
+				return LocalDate.parse(date, dateFormat);
+			}
+		});
+
+		final DateTimeFormatter timeFormat =
+			DateTimeFormatter.ofPattern("h:mm a");
+		
+		gsonBuilder.registerTypeAdapter(LocalTime.class, new JsonSerializer<LocalTime>() {
+			@Override
+			public JsonElement serialize(
+				final LocalTime src, 
+				final Type typeOfSrc,
+				final JsonSerializationContext context
+			) {
+				return new JsonPrimitive(src.format(timeFormat));
+			}
+		});
+		
+		gsonBuilder.registerTypeAdapter(LocalTime.class, new JsonDeserializer<LocalTime>() {
+			@Override
+			public LocalTime deserialize(
+				final JsonElement json, 
+				final Type typeOfSrc,
+				final JsonDeserializationContext context
+			) throws JsonParseException {
+				return LocalTime.parse(json.getAsJsonPrimitive().getAsString(), timeFormat);
+			}
+		});
+		
+		return gsonBuilder.create();
 	}
 
 	@Provides @RequestScoped public ExecutorService getThreadPool() {

@@ -35,6 +35,7 @@ import com.bookstuf.datastore.DailyAgenda;
 import com.bookstuf.datastore.PaymentMethod;
 import com.bookstuf.datastore.PaymentStatus;
 import com.bookstuf.datastore.ProfessionalInformation;
+import com.bookstuf.datastore.Service;
 import com.bookstuf.web.Default;
 import com.bookstuf.web.ExceptionHandler;
 import com.bookstuf.web.Param;
@@ -53,7 +54,9 @@ import com.google.inject.Singleton;
 import com.googlecode.objectify.Key;
 import com.googlecode.objectify.LoadResult;
 import com.googlecode.objectify.NotFoundException;
+import com.googlecode.objectify.ObjectifyService;
 import com.googlecode.objectify.Result;
+import com.googlecode.objectify.util.Closeable;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Card;
 import com.stripe.model.Customer;
@@ -98,7 +101,8 @@ public class BookingServlet extends RpcServlet {
 	
 	private void handleStripeCardPaymentMethod(
 		final Booking booking, 
-		final BookingRequest request
+		final BookingRequest request,
+		final Result<ConsumerInformation> consumerInformationResult
 	) throws Exception {
 		// generate idempotent keys for stripe requests
 		final String customerCreateIdemKey = UUID.randomUUID().toString();
@@ -108,9 +112,6 @@ public class BookingServlet extends RpcServlet {
 		retryHelper.transactNew(10000, new Callable<Void>() {
 			@Override
 			public Void call() throws Exception {
-				final Result<ConsumerInformation> consumerInformationResult =
-					userService.getCurrentConsumerInformation();
-				
 				booking.setPaymentStatus(PaymentStatus.PENDING);
 				booking.setPaymentMethod(PaymentMethod.STRIPE_CARD);
 				
@@ -185,15 +186,26 @@ public class BookingServlet extends RpcServlet {
 		final Booking booking, 
 		final BookingRequest request
 	) {
+		final Result<ConsumerInformation> consumerInformationResult =
+			userService.getCurrentConsumerInformation();
+		
 		return execService.get().submit(new Callable<Void>() {
 			@Override
-			public Void call() throws Exception {		
-				if (request.paymentMethod == PaymentMethod.STRIPE_CARD) {
-					handleStripeCardPaymentMethod(booking, request);
-					
-				} else {
-					handleCashPaymentMethod(booking);
+			public Void call() throws Exception {
+				final Closeable session =
+					ObjectifyService.begin();
+				
+				try {
+					if (request.paymentMethod == PaymentMethod.STRIPE_CARD) {
+						handleStripeCardPaymentMethod(booking, request, consumerInformationResult);
+						
+					} else {
+						handleCashPaymentMethod(booking);
+					}
+				} finally {
+					session.close();
 				}
+				
 				
 				return null;
 			}
@@ -218,6 +230,7 @@ public class BookingServlet extends RpcServlet {
 		final Booking requestedBooking =
 			new Booking();
 		
+		
 		// payment can be handled in parallel.  it could take a long time for
 		// roundtrips to both datastore and stripe's servers if needed.
 		final ListenableFuture<Void> paymentMethodStatus =
@@ -234,13 +247,13 @@ public class BookingServlet extends RpcServlet {
 		
 		final Key<ProfessionalInformation> professionalKey = 
 			Key.create(ProfessionalInformation.class, request.professionalUserId);
-		
+
 		
 		// fill in booking information
 		requestedBooking.setProfessional(professionalKey);
 		requestedBooking.setConsumer(consumerKey);
-		requestedBooking.setService(request.service);
 		requestedBooking.setStartTime(request.startTime);
+		
 		
 		return retryHelper.transactNew(10000, new Callable<String>() {
 			@Override
@@ -252,7 +265,10 @@ public class BookingServlet extends RpcServlet {
 				final Result<ConsumerDailyAgenda> consumerDailyAgendaResult =
 					getConsumerDailyAgenda(consumerKey, consumerUserId, request.date);
 
-				
+				final LoadResult<ProfessionalInformation> professionalInfoResult =
+					ofy().load().key(professionalKey);
+
+
 				// wait for the daily agendas to be ready
 				final DailyAgenda professionalDailyAgenda =
 					professionalDailyAgendaResult.now();
@@ -260,6 +276,16 @@ public class BookingServlet extends RpcServlet {
 				final ConsumerDailyAgenda consumerDailyAgenda =
 					consumerDailyAgendaResult.now();
 				
+				final ProfessionalInformation professionalInfo = 
+					professionalInfoResult.safe();
+				
+				final LinkedList<Availability> availability =
+					professionalInfo.getAvailability();
+
+				final Service service =
+					professionalInfo.getService(request.serviceId);
+				
+				requestedBooking.setService(service);
 				
 				// need to wait for payment method to finish updating the booking 
 				// with payment information and give it the opportunity to throw 
@@ -269,6 +295,7 @@ public class BookingServlet extends RpcServlet {
 				
 				// see if we can make the booking...
 				if (
+					isAvailable(request.date.getDayOfWeek(), availability, requestedBooking) &&
 					professionalDailyAgenda.canAdd(requestedBooking) &&
 					consumerDailyAgenda.canAdd(requestedBooking)
 				) {
@@ -293,6 +320,40 @@ public class BookingServlet extends RpcServlet {
 				}
 			}
 		});
+	}
+
+	private boolean isAvailable(
+		final DayOfWeek dayOfWeek,
+		final LinkedList<Availability> availability,
+		final Booking requestedBooking
+	) {
+		for (final Availability a : availability) {
+			if (a.getDayOfTheWeek() == dayOfWeek) {
+				
+				final LocalTime availStartTime =
+					LocalTime.of(a.getStartHour(), a.getStartMinute());
+				
+				final LocalTime availEndTime =
+					LocalTime.of(a.getEndHour(), a.getEndMinute());
+				
+				final LocalTime bookingEndTime =
+					requestedBooking.getStartTime().plus(requestedBooking.getService().getDuration());
+				
+				if (
+					(
+						requestedBooking.getStartTime().equals(availStartTime) ||
+						requestedBooking.getStartTime().isAfter(availStartTime)
+					) && (
+						bookingEndTime.equals(availEndTime) ||
+						bookingEndTime.isBefore(availEndTime)
+					)
+				) {
+					return true;
+				}
+			}
+		}
+		
+		return false;
 	}
 
 	private Card getCard(
@@ -351,7 +412,7 @@ public class BookingServlet extends RpcServlet {
 		};
 	}
 
-	private Map<Key<DailyAgenda>, DailyAgenda> getProfessionalDailyAgenda(
+	private List<Key<DailyAgenda>> getProfessionalDailyAgenda(
 		final String professionalUserId, 
 		final LocalDate startDate,
 		final int numDays
@@ -369,10 +430,10 @@ public class BookingServlet extends RpcServlet {
 			keys.add(key);
 		}
 		
-		return ofy().load().keys(keys);
+		return keys;
 	}
 	
-	private Map<Key<ConsumerDailyAgenda>, ConsumerDailyAgenda> getConsumerDailyAgenda(
+	private List<Key<ConsumerDailyAgenda>> getConsumerDailyAgenda(
 		final String consumerUserId, 
 		final LocalDate startDate,
 		final int numDays
@@ -390,7 +451,7 @@ public class BookingServlet extends RpcServlet {
 			keys.add(key);
 		}
 		
-		return ofy().load().keys(keys);
+		return keys;
 	}
 
 	private Result<ConsumerDailyAgenda> getConsumerDailyAgenda(
@@ -429,60 +490,71 @@ public class BookingServlet extends RpcServlet {
 		final LocalDate startDate =
 			LocalDate.now();
 		
-		final int NUM_DAYS = 14;
+		final int NUM_DAYS = 7;
 		
 		// initiate fetch for daily agendas
-		final Map<Key<DailyAgenda>, DailyAgenda> professionalDailyAgendaResult =
+		final List<Key<DailyAgenda>> professionalDailyAgendaKeys =
 			getProfessionalDailyAgenda(professionalUserId, startDate, NUM_DAYS);
 
+		final Map<Key<DailyAgenda>, DailyAgenda> professionalDailyAgendaResult =
+			ofy().load().keys(professionalDailyAgendaKeys);
+		
+		
 		final String consumerUserId =
 			gitkitUser.get().getLocalId();
-		
-		final Map<Key<ConsumerDailyAgenda>, ConsumerDailyAgenda> consumerDailyAgendaResult =
-				getConsumerDailyAgenda(consumerUserId, startDate, NUM_DAYS);
 
+		final List<Key<ConsumerDailyAgenda>> consumerDailyAgendaKeys =
+			getConsumerDailyAgenda(consumerUserId, startDate, NUM_DAYS);
+
+		final Map<Key<ConsumerDailyAgenda>, ConsumerDailyAgenda> consumerDailyAgendaResult =
+			ofy().load().keys(consumerDailyAgendaKeys);	
+
+		
 		final Key<ProfessionalInformation> professionalKey = 
 			Key.create(ProfessionalInformation.class, professionalUserId);
-		
+
 		final LoadResult<ProfessionalInformation> professionalInfoResult =
 			ofy().load().key(professionalKey);
 		
 		
 		final ArrayList<PublicDailyAvailability> result =
 			new ArrayList<>();
-		
+
+		final Iterator<Key<DailyAgenda>> professionalAgendaIterator =
+			professionalDailyAgendaKeys.iterator();
+
+		final Iterator<Key<ConsumerDailyAgenda>> consumerAgendaIterator =
+			consumerDailyAgendaKeys.iterator();
+
 		final LinkedList<Availability> availability =
 			professionalInfoResult.safe().getAvailability();
-		
+
 		final Map<DayOfWeek, TreeMap<LocalTime, Availability>> dailyAvailability =
 			sortAvailability(availability);
-
-
-		LocalDate date = startDate;
 		
-		final Iterator<Entry<Key<DailyAgenda>, DailyAgenda>> professionalAgendaIterator =
-			professionalDailyAgendaResult.entrySet().iterator();
-		
-		final Iterator<Entry<Key<ConsumerDailyAgenda>, ConsumerDailyAgenda>> consumerAgendaIterator =
-			consumerDailyAgendaResult.entrySet().iterator();
+		int index = 0;
 		
 		while (
-			professionalAgendaIterator.hasNext() && 
-			consumerAgendaIterator.hasNext()
+			consumerAgendaIterator.hasNext() &&
+			professionalAgendaIterator.hasNext()
 		) {
+			final LocalDate date = 
+				startDate.plusDays(index);
+			
 			final DayOfWeek dayOfWeek =
 				date.getDayOfWeek();
-			
+	
 			final PublicDailyAvailability publicDailyAvailability =
 				new PublicDailyAvailability(
+					index,
 					date, 
-					next(consumerAgendaIterator), 
-					next(professionalAgendaIterator), 
+					bookings(consumerDailyAgendaResult.get(consumerAgendaIterator.next())), 
+					bookings(professionalDailyAgendaResult.get(professionalAgendaIterator.next())), 
 					dailyAvailability.get(dayOfWeek));
 			
 			result.add(publicDailyAvailability);
 			
-			date = date.plusDays(1);
+			index++;
 		}
 		
 		return result;
@@ -525,15 +597,9 @@ public class BookingServlet extends RpcServlet {
 		return dayOfWeekAvailability;
 	}
 
-	private <T extends DailyAgenda> TreeMap<LocalTime, Booking> next(
-		final Iterator<Entry<Key<T>, T>> i
+	private <T extends DailyAgenda> TreeMap<LocalTime, Booking> bookings(
+		final T value
 	) {
-		final Entry<Key<T>, T> entry =
-			i.next();
-				
-		final T value = 
-			entry.getValue();
-		
 		if (value != null) {
 			return value.bookingMap();
 		}

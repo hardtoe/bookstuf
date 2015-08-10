@@ -98,38 +98,43 @@ public class CardServlet extends RpcServlet {
 	private void notFound(final HttpServletResponse response) {
 		response.setStatus(404);
 	}
-	
+
 	/**
 	 *  this will only return the 10 cards on the customer object itself,
 	 *  bookstuf needs to limit the number of cards that can be added
 	 */
 	@Publish(withAutoRetryMillis = 30000)
 	private List<CardSummary> all() throws StripeException {
-		final ConsumerInformation consumerInformation =
-			userService.getCurrentConsumerInformation().now();
-		
-		final Customer customer =
-			stripe.customer().retrieve(consumerInformation.getStripeCustomerId()).get();
-		
 		final ArrayList<CardSummary> cards =
 			new ArrayList<>();
 		
-		final List<Card> stripeCards = 
-			customer.getCards().getData();
+		final ConsumerInformation consumerInformation =
+			userService.getCurrentConsumerInformation().now();
 		
-		final String defaultCard =
-			customer.getDefaultCard();
+		final String stripeCustomerId = 
+			consumerInformation.getStripeCustomerId();
 		
-		for (final Card c : stripeCards) {
-			cards.add(new CardSummary(
-				c.getId(),
-				c.getId().equals(defaultCard),
-				c.getBrand(),
-				c.getLast4(),
-				c.getExpMonth(),
-				c.getExpYear(),
-				c.getMetadata().containsKey("deleted")
-			));
+		if (stripeCustomerId != null) {
+			final Customer customer =
+				stripe.customer().retrieve(stripeCustomerId).get();
+			
+			final List<Card> stripeCards = 
+				customer.getCards().getData();
+			
+			final String defaultCard =
+				customer.getDefaultCard();
+			
+			for (final Card c : stripeCards) {
+				cards.add(new CardSummary(
+					c.getId(),
+					c.getId().equals(defaultCard),
+					c.getBrand(),
+					c.getLast4(),
+					c.getExpMonth(),
+					c.getExpYear(),
+					c.getMetadata().containsKey("deleted")
+				));
+			}
 		}
 		
 		return cards;

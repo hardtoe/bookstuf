@@ -4,11 +4,10 @@ import org.threeten.bp.LocalDate;
 import org.threeten.bp.LocalTime;
 
 import com.bookstuf.datastore.PaymentMethod;
-import com.bookstuf.datastore.Service;
 
 public class BookingRequest {
 	public String professionalUserId;
-	public Service service;
+	public String serviceId;
 	public LocalDate date;
 	public LocalTime startTime;
 	

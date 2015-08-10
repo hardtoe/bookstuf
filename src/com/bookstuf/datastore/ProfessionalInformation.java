@@ -2,6 +2,7 @@ package com.bookstuf.datastore;
 
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.UUID;
 
 import com.bookstuf.PublicReadOnly;
 import com.google.appengine.api.blobstore.BlobKey;
@@ -9,6 +10,8 @@ import com.googlecode.objectify.annotation.Cache;
 import com.googlecode.objectify.annotation.Entity;
 import com.googlecode.objectify.annotation.Id;
 import com.googlecode.objectify.annotation.Index;
+import com.googlecode.objectify.annotation.OnLoad;
+import com.googlecode.objectify.annotation.OnSave;
 import com.googlecode.objectify.annotation.Serialize;
 
 // TODO: addressName
@@ -45,10 +48,19 @@ public class ProfessionalInformation {
     CancellationPolicy cancellationPolicy;
 	int cancellationDeadline;
 	
+	int nextServiceId;
 	@Serialize LinkedList<Service> services;
 	
 	@Serialize LinkedList<Availability> availability;
 
+	@OnLoad @OnSave void fixServiceIds() {
+		for (final Service service : services) {
+			if (service.id == null) {
+				service.id = Integer.toString(nextServiceId++);
+			}
+		}
+	}
+	
     public void addPhoto(
     	final BlobKey blobKey, 
     	final String url
@@ -269,5 +281,15 @@ public class ProfessionalInformation {
 		} else {
 			return ProviderInformationStatus.PARTIAL;
 		}
+	}
+
+	public Service getService(final String serviceId) {
+		for (final Service service : services) {
+			if (service.id.equals(serviceId)) {
+				return service;
+			}
+		}
+		
+		return null;
 	}
 }

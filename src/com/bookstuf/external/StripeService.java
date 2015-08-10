@@ -32,14 +32,14 @@ public class StripeService {
 		final Logger logger,
 		final URLFetchService urlFetchService,
 		final ListeningExecutorService listeningExecService,
-		final KeyStore keyStore
+		final KeyStore keyStore,
+		final Gson gson
 	) {
 		this.logger = logger;
 		this.urlFetchService = urlFetchService;
 		this.listeningExecService = listeningExecService;
 		this.keyStore = keyStore;
-		
-		this.gson = new Gson();
+		this.gson = gson;
 	}
 	
 	public ListenableFuture<StripeConnectAuthorizationResponse> connectAccountAsync(

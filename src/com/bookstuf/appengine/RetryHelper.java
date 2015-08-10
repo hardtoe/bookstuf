@@ -20,6 +20,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.name.Named;
 import com.google.inject.servlet.RequestScoped;
+import com.googlecode.objectify.ObjectifyService;
 import com.googlecode.objectify.Work;
 
 import static com.googlecode.objectify.ObjectifyService.ofy;
@@ -155,7 +156,7 @@ public class RetryHelper {
 							return callable.call();
 							
 						} catch(final Exception e) {
-							throw new RuntimeException();
+							throw new RuntimeException(e);
 						}
 					}
 				});
@@ -207,7 +208,11 @@ public class RetryHelper {
 			t.getClass() == RuntimeException.class ||
 			t.getClass() == ExecutionException.class
 		) {
-			return getRealCause(t.getCause());
+			if (t.getCause() == null) {
+				return t;
+			} else {
+				return getRealCause(t.getCause());
+			}
 			
 		} else {
 			return t;

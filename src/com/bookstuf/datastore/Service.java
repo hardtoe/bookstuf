@@ -8,8 +8,16 @@ import java.math.BigDecimal;
 
 import org.threeten.bp.Duration;
 
+import com.bookstuf.PublicReadOnly;
+
 public class Service implements Serializable {
 	private static final long serialVersionUID = 1L;
+
+	@PublicReadOnly
+	int version = 1;
+	
+	@PublicReadOnly
+	String id;
 	
 	String name;
 	String description;
@@ -29,6 +37,7 @@ public class Service implements Serializable {
 				+ ((description == null) ? 0 : description.hashCode());
 		result = prime * result
 				+ ((duration == null) ? 0 : duration.hashCode());
+		result = prime * result + ((id == null) ? 0 : id.hashCode());
 		result = prime * result + ((name == null) ? 0 : name.hashCode());
 		return result;
 	}
@@ -38,44 +47,38 @@ public class Service implements Serializable {
 	 */
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj) {
+		if (this == obj)
 			return true;
-		}
-		if (obj == null) {
+		if (obj == null)
 			return false;
-		}
-		if (!(obj instanceof Service)) {
+		if (!(obj instanceof Service))
 			return false;
-		}
 		Service other = (Service) obj;
 		if (cost == null) {
-			if (other.cost != null) {
+			if (other.cost != null)
 				return false;
-			}
-		} else if (!cost.equals(other.cost)) {
+		} else if (!cost.equals(other.cost))
 			return false;
-		}
 		if (description == null) {
-			if (other.description != null) {
+			if (other.description != null)
 				return false;
-			}
-		} else if (!description.equals(other.description)) {
+		} else if (!description.equals(other.description))
 			return false;
-		}
 		if (duration == null) {
-			if (other.duration != null) {
+			if (other.duration != null)
 				return false;
-			}
-		} else if (!duration.equals(other.duration)) {
+		} else if (!duration.equals(other.duration))
 			return false;
-		}
+		if (id == null) {
+			if (other.id != null)
+				return false;
+		} else if (!id.equals(other.id))
+			return false;
 		if (name == null) {
-			if (other.name != null) {
+			if (other.name != null)
 				return false;
-			}
-		} else if (!name.equals(other.name)) {
+		} else if (!name.equals(other.name))
 			return false;
-		}
 		return true;
 	}
 
@@ -84,7 +87,8 @@ public class Service implements Serializable {
 	) throws 
 		IOException 
 	{
-		out.writeLong(serialVersionUID);
+		out.writeInt(version);
+		out.writeObject(id);
 		out.writeObject(name);
 		out.writeObject(description);
 		out.writeObject(cost);
@@ -97,7 +101,8 @@ public class Service implements Serializable {
 		IOException, 
 		ClassNotFoundException 
 	{
-		in.readLong(); // version
+		version = in.readInt();
+		id = (String) in.readObject();
 		name = (String) in.readObject();
 		description = (String) in.readObject();
 		cost = (BigDecimal) in.readObject();

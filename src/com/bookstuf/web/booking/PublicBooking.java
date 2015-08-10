@@ -5,26 +5,41 @@ import org.threeten.bp.LocalTime;
 import com.bookstuf.datastore.Booking;
 
 public class PublicBooking {
+	public transient LocalTime startTimeObject;
+	
 	public final boolean isPrivate;
 	public final String title;
+	public String startTime;
 	
-	public final LocalTime startTime;
-	public LocalTime endTime;
+	public int top;
+	public int height;
 
 	public PublicBooking(final LocalTime startTime) {
 		this.isPrivate = true;
 		this.title = "";
-		this.startTime = startTime;
+		
+		setStartTime(startTime);
 	}
 
 	public PublicBooking(final Booking consumerBooking) {
 		this.isPrivate = false;
 		this.title = consumerBooking.getService().getName();
-		this.startTime = consumerBooking.getStartTime();
-		this.endTime = consumerBooking.getStartTime().plus(consumerBooking.getService().getDuration());
+		
+		setStartTime(consumerBooking.getStartTime());
+		setEndTime(consumerBooking.getStartTime().plus(consumerBooking.getService().getDuration()));
+	}
+
+	private void setStartTime(final LocalTime time) {
+		this.startTimeObject = time;
+		this.startTime = time.toString();
+		this.top = getPixels(time);
+	}
+	
+	private int getPixels(final LocalTime time) {
+		return (time.getHour() * 50) + ((time.getMinute() * 50) / 60);
 	}
 
 	public void setEndTime(final LocalTime endTime) {
-		this.endTime = endTime;
+		this.height = getPixels(endTime) - top;
 	}
 }

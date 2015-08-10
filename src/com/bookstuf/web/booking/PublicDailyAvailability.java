@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TreeMap;
 import java.util.Map.Entry;
+import java.util.logging.Level;
 
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.LocalTime;
@@ -14,6 +15,7 @@ import com.bookstuf.datastore.Availability;
 import com.bookstuf.datastore.Booking;
 
 public class PublicDailyAvailability {
+	public final int index;
 	public final String dayOfWeek;
 	public final String month;
 	public final int monthNumber;
@@ -22,26 +24,27 @@ public class PublicDailyAvailability {
 	public final List<PublicBooking> bookedTimes;
 	
 	public PublicDailyAvailability(
+		final int index,
 		final LocalDate day,
 		final TreeMap<LocalTime, Booking> consumerAgenda,
 		final TreeMap<LocalTime, Booking> professionalAgenda,
 		final TreeMap<LocalTime, Availability> professionalAvailability
 	) {
-		dayOfWeek = day.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.US);
-		month = day.getMonth().getDisplayName(TextStyle.FULL, Locale.US);
-		monthNumber = day.getMonthValue();
-		dayOfMonth = day.getDayOfMonth();
-		year = day.getYear();
-		bookedTimes = new ArrayList<>();
+		this.index = index;
+		this.dayOfWeek = day.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.US);
+		this.month = day.getMonth().getDisplayName(TextStyle.FULL, Locale.US);
+		this.monthNumber = day.getMonthValue();
+		this.dayOfMonth = day.getDayOfMonth();
+		this.year = day.getYear();
+		this.bookedTimes = new ArrayList<>();
 		
 		// iterate over the entire day in 15 minute increments
 		PublicBooking currentBookedRange = null;
 		
-		for (
-			LocalTime t = LocalTime.MIN; 
-			t.isBefore(LocalTime.MAX); 
-			t = t.plusMinutes(15)
-		) {
+		for (int minutes = 0; minutes < (24 * 60); minutes += 15) {
+			final LocalTime t = 
+				LocalTime.ofSecondOfDay(minutes * 60);
+
 			final boolean previousSlotIsAvailable =
 				currentBookedRange == null;
 			

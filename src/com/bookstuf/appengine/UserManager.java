@@ -81,8 +81,11 @@ public class UserManager implements Serializable {
 	}
 
 	public Result<ConsumerInformation> getCurrentConsumerInformation() {
+		final GitkitUser gitkitUserValue =
+				gitkitUser.get();
+		
 		final LoadResult<ConsumerInformation> loadResult =
-			ofy().load().type(ConsumerInformation.class).id(gitkitUser.get().getLocalId());
+			ofy().load().type(ConsumerInformation.class).id(gitkitUserValue.getLocalId());
 		
 		return new Result<ConsumerInformation>() {
 			private ConsumerInformation result = null;
@@ -94,8 +97,6 @@ public class UserManager implements Serializable {
 						result = loadResult.safe();
 						
 					} catch (final NotFoundException e) {
-						final GitkitUser gitkitUserValue =
-							gitkitUser.get();
 						
 						final ConsumerInformation consumerInformation = new ConsumerInformation();
 						

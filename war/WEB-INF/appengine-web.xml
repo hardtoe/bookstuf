@@ -28,7 +28,12 @@
     http://code.google.com/appengine/docs/java/config/appconfig.html#Enabling_Sessions
   -->
 
-
+<!-- If more memory is needed for local instance cache
+	<instance-class>F4</instance-class>
+	<automatic-scaling>
+		<max-concurrent-requests>40</max-concurrent-requests>
+	</automatic-scaling>
+-->
 	<static-files>
 		<include path="/**.*" expiration="10s" />
 	</static-files>

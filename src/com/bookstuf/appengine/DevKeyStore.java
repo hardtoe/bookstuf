@@ -9,6 +9,10 @@ public class DevKeyStore implements KeyStore {
 	public String getStripeClientId() {
 		return "ca_6alXrQKPz1whryd22S7nu6widUhQasz7";
 	}
+	
+	public String getStripeClientPublic() {
+		return "pk_test_N0zNZdZs8d59IaOqOGnL8nHa";
+	}
 
 	@Override
 	public String getStripeClientSecret() {

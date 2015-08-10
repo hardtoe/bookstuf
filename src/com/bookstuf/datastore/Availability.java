@@ -7,8 +7,13 @@ import java.io.Serializable;
 
 import org.threeten.bp.DayOfWeek;
 
+import com.bookstuf.PublicReadOnly;
+
 public class Availability implements Serializable {
 	private static final long serialVersionUID = 1L;
+	
+	@PublicReadOnly
+	int version = 1;
 	
 	DayOfWeek dayOfTheWeek;
 	int startHour;
@@ -21,7 +26,7 @@ public class Availability implements Serializable {
 	) throws 
 		IOException 
 	{
-		out.writeLong(serialVersionUID);
+		out.writeInt(version);
 		out.writeObject(dayOfTheWeek);
 		out.writeInt(startHour);
 		out.writeInt(startMinute);
@@ -35,7 +40,7 @@ public class Availability implements Serializable {
 		IOException, 
 		ClassNotFoundException 
 	{
-		in.readLong(); // version
+		version = in.readInt();
 		dayOfTheWeek = (DayOfWeek) in.readObject();
 		startHour = in.readInt();
 		startMinute = in.readInt();

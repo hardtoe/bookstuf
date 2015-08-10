@@ -32,6 +32,10 @@
 		<script type="text/javascript" src="bookstuf.js"></script>
 		<link type=text/css rel=stylesheet href="bookstuf.css" />
 			
+		<!-- Stripe -->	
+		<script type="text/javascript" src="https://js.stripe.com/v2/"></script>	
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery.payment/1.3.2/jquery.payment.min.js"></script>	
+			
 		<!-- material design light -->
 		<link rel="stylesheet" href="https://storage.googleapis.com/code.getmdl.io/1.0.0/material.blue-red.min.css">
 		<script src="https://storage.googleapis.com/code.getmdl.io/1.0.0/material.min.js"></script>
@@ -40,41 +44,207 @@
 
 		<script id="calendar-template" type="x-tmpl-mustache">
 			{{#days}}
-			<div class="day-container">
+			<div class="day-container" id="day-container-{{index}}">
 				<div class="day-header">
 					<span class="day-header-day-of-week">{{dayOfWeek}}</span>
 					<span class="day-header-month">{{month}}</span>
-					<span class="day-header-day">{{day}}</span>
+					<span class="day-header-day">{{dayOfMonth}}</span>
 				</div>
 
-				{{#bookings}}
-				<div class="booking" style="top: {{top}}; height: {{height}};">
-				</div>
-				{{/bookings}}
+				{{#bookedTimes}}
+					{{#isPrivate}}
+					<div class="booking" style="top: {{top}}; height: {{height}};"></div>
+					{{/isPrivate}}
 
-				{{#consumerBookings}}
-				<div class="consumer-booking" style="top: {{top}}; height: {{height}};">
-					<span class="consumer-booking-start-time">{{startTime}}</span>
-					<span class="consumer-booking-title">{{title}}</span>
-				</div>
-				{{/consumerBookings}}
+					{{^isPrivate}}
+					<div class="consumer-booking" style="top: {{top}}; height: {{height}};">
+						<span class="consumer-booking-start-time">{{startTime}}</span>
+						<span class="consumer-booking-title">{{title}}</span>
+					</div>
+					{{/isPrivate}}
+				{{/bookedTimes}}
 			</div>
 			{{/days}}
 		</script>
-     
+
+		<script id="card-template" type="x-tmpl-mustache">
+			<div class="group">    
+				<select id="cardId" class="valid">
+					<option {{#cardsFull}}disabled{{/cardsFull}} {{#noCards}}selected{{/noCards}} value="addNewCard">
+						Add new card
+					</option>
+					{{#cards}}
+					<option {{#deleted}}disabled{{/deleted}} {{#isDefault}}selected{{/isDefault}} value="{{id}}">
+						{{brand}} ending in {{last4}}, exp. {{expMonth}}/{{expYear}}
+					</option>
+					{{/cards}}
+				</select>
+				<span class="bar"></span>
+				<label class="select-label">Select Credit Card</label>
+			</div>
+		</script>
+
+		<script id="services-template" type="x-tmpl-mustache">
+			<div class="group">    
+				<select id="serviceId" class="valid">
+					{{#services}}
+					<option value="{{id}}">
+						{{name}}, ${{cost}}
+					</option>
+					{{/services}}
+				</select>
+				<span class="bar"></span>
+				<label class="select-label">Service</label>
+			</div>
+		</script>
+
 		<script type="text/javascript">
+			$(function() {
+				var id = 
+					getUrlParameter("id");
+				
+				var calendarTemplate = 
+					Hogan.compile($('#calendar-template').html());
+				
+				$.get('/booking/availability', {'professionalUserId' : id})
+				.done(function(data) {
+					var calendarData = JSON.parse(data);
+					$('#calendar').html(calendarTemplate.render({'days': calendarData}));
+				});
+			
+				
+				$('#cc-number').payment('formatCardNumber');
+				$('#cc-exp').payment('formatCardExpiry');
+				$('#cc-cvc').payment('formatCardCVC');
+				
+				var cardTemplate = 
+					Hogan.compile($('#card-template').html());
+				
+				$.get('/cards/all')
+				.done(function(data) {
+					var cardData = 
+						JSON.parse(data);
+					
+					$('#cards').html(cardTemplate.render({
+						'cards': cardData,
+						'cardsFull': (cardData.length >= 10),
+						'noCards' : (cardData.length == 0)
+					}));
+				});
+
+				
+				
+				var servicesTemplate = 
+					Hogan.compile($('#services-template').html());
+				
+				$.get('/user/getUserInformationWithId', {'professionalUserId' : id})
+				.done(function(data) {
+					var servicesData = JSON.parse(data);
+					$('#services').html(servicesTemplate.render(servicesData));
+					$('#serviceId').val(getUrlParameter("serviceId"));
+				});
+				
+				$('#book-now-button').click(function() {
+					$('#book-now-button').prop('disabled', true);
+					
+					Stripe.setPublishableKey('pk_test_N0zNZdZs8d59IaOqOGnL8nHa');
+					
+					var validatedCcExp =
+						$('#cc-exp').payment('cardExpiryVal');
+					
+					Stripe.card.createToken({
+						number: $('#cc-number').val(),
+						cvc: $('#ccc-cvc').val(),
+						exp_month: validatedCcExp['month'],
+						exp_year: validatedCcExp['year']
+					}, function(status, response) {
+						if (response.error) {
+							// Show the errors on the form
+							$('.payment-errors').text(response.error.message);
+							
+							$('#book-now-button').prop('disabled', false);
+						} else {
+							// response contains id and card, which contains additional card details
+							var token = response.id;
+							$('.payment-errors').text('');
+							console.log('token: ' + token);
+							
+							$.post('/booking/book', JSON.stringify({
+								'professionalUserId' : id,
+								'serviceId' : $('#serviceId').val(), // TODO: change services to radio buttons or select
+								'date' : '8/8/2015', // TODO: generate date
+								'startTime' : '8:00 AM', // TODO: generate start time
+								'paymentMethod' : 'STRIPE_CARD', // TODO: add input for card vs. cash
+								'isNewStripeCustomer' : true, // TODO: need information on whether this is a new stripe customer or not
+								'addNewCard' : $('#cardId').val() === 'addNewCard',
+								'setNewCardAsDefault' : true, // TODO: need input to set new card as default
+								'stripeToken' : token,
+								'cardId' : $('#cardId').val()
+								
+							})).done(function(data) {
+
+								// TODO: handle errors
+								// TODO: goto confirmation page
+							});
+						}
+						/*
+	public String professionalUserId;
+	public String serviceId;
 	
+	public LocalDate date;
+	public LocalTime startTime;
+	public PaymentMethod paymentMethod; {STRIPE_CARD, CASH;}
+	public boolean isNewStripeCustomer;
+	public boolean addNewCard;
+	public boolean setNewCardAsDefault;
+	public String stripeToken;
+	public String cardId;
+						*/
+					});
+				});
+			});
 		</script>
 		
 		<style>
-
+		
 		</style>
 		
 		
 		<title>bookstuf.com - book an appointment</title>
-	</head>
-	
-	<body>
 		
-	</body>
+		<script>
+		  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+		
+		  ga('create', 'UA-66119190-1', 'auto');
+		  ga('send', 'pageview');
+		
+		</script>
+	</head>
+
+<body>
+	<div class="calendar" id="calendar"></div>
+	<div class="services" id="services"></div>
+	<div class="cards-form">
+		<div class="cards" id="cards"></div>
+		<br />
+		<span class="payment-errors"></span><br />
+
+		<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+			<input class="mdl-textfield__input" type="text" size="20" id="cc-number" placeholder="•••• •••• •••• ••••" type="tel" class="cc-number" name="cardNumber" autocomplete="on" />
+		</div>
+		
+		<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+			<input class="mdl-textfield__input" type="text" size="7" id="cc-exp" placeholder="•• / ••" type="tel" class="cc-exp" name="cardExpiration" autocomplete="on" />
+		</div><br />
+		
+		<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+			<input class="mdl-textfield__input" type="text" size="4" id="cc-cvc" placeholder="•••" type="tel" />
+		</div><br />
+
+		<button class="mdl-button mdl-js-button mdl-js-ripple-effect" id="book-now-button">Book now</button>	
+	</div>
+</body>
 </html>

@@ -245,7 +245,11 @@ public abstract class RpcServlet extends HttpServlet {
 			t.getClass() == RuntimeException.class ||
 			t.getClass() == ExecutionException.class
 		) {
-			return getRealCause(t.getCause());
+			if (t.getCause() == null) {
+				return t;
+			} else {
+				return getRealCause(t.getCause());
+			}
 			
 		} else {
 			return t;
