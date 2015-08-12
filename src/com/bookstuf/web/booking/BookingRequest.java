@@ -17,11 +17,6 @@ public class BookingRequest {
 	public PaymentMethod paymentMethod;
 	
 	/**
-	 * create new stripe customer if this is set
-	 */
-	public boolean isNewStripeCustomer;
-	
-	/**
 	 * use this new card and add it to the customer
 	 */
 	public boolean addNewCard;

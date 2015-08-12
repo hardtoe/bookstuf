@@ -10,6 +10,7 @@ import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
 import org.junit.Test;
+import org.threeten.bp.Duration;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.LocalTime;
 import org.threeten.bp.format.DateTimeFormatter;
@@ -23,6 +24,7 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import com.google.gson.TypeAdapter;
 import com.google.identitytoolkit.GitkitClient;
 import com.google.identitytoolkit.GitkitClientException;
 import com.google.identitytoolkit.GitkitUser;
@@ -113,6 +115,28 @@ public class BookstufLogicModule extends AbstractModule {
 				final JsonDeserializationContext context
 			) throws JsonParseException {
 				return LocalTime.parse(json.getAsJsonPrimitive().getAsString(), timeFormat);
+			}
+		});
+		
+		gsonBuilder.registerTypeAdapter(Duration.class, new JsonSerializer<Duration>() {
+			@Override
+			public JsonElement serialize(
+				final Duration src, 
+				final Type typeOfSrc,
+				final JsonSerializationContext context
+			) {
+				return new JsonPrimitive(src.toMinutes());
+			}
+		});
+		
+		gsonBuilder.registerTypeAdapter(Duration.class, new JsonDeserializer<Duration>() {
+			@Override
+			public Duration deserialize(
+				final JsonElement json, 
+				final Type typeOfSrc,
+				final JsonDeserializationContext context
+			) throws JsonParseException {
+				return Duration.ofMinutes(json.getAsJsonPrimitive().getAsNumber().longValue());
 			}
 		});
 		

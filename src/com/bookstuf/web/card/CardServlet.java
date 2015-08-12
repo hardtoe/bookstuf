@@ -64,6 +64,7 @@ import com.googlecode.objectify.Work;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Card;
 import com.stripe.model.Customer;
+import com.stripe.model.ExternalAccount;
 
 @Singleton
 @SuppressWarnings("serial")
@@ -118,22 +119,27 @@ public class CardServlet extends RpcServlet {
 			final Customer customer =
 				stripe.customer().retrieve(stripeCustomerId).get();
 			
-			final List<Card> stripeCards = 
-				customer.getCards().getData();
+			final List<ExternalAccount> stripeCards = 
+				customer.getSources().getData();
 			
 			final String defaultCard =
-				customer.getDefaultCard();
+				customer.getDefaultSource();
 			
-			for (final Card c : stripeCards) {
-				cards.add(new CardSummary(
-					c.getId(),
-					c.getId().equals(defaultCard),
-					c.getBrand(),
-					c.getLast4(),
-					c.getExpMonth(),
-					c.getExpYear(),
-					c.getMetadata().containsKey("deleted")
-				));
+			for (final ExternalAccount a : stripeCards) {
+				if (a instanceof Card) {
+					final Card c =
+						(Card) a;
+					
+					cards.add(new CardSummary(
+						c.getId(),
+						c.getId().equals(defaultCard),
+						c.getBrand(),
+						c.getLast4(),
+						c.getExpMonth(),
+						c.getExpYear(),
+						c.getMetadata().containsKey("deleted")
+					));
+				}
 			}
 		}
 		
@@ -159,7 +165,7 @@ public class CardServlet extends RpcServlet {
 				final Customer customer =
 					stripe.customer().retrieve(consumerInformation.getStripeCustomerId()).get();
 
-				if (customer.getCards().getTotalCount() < 10) {
+				if (customer.getSources().getTotalCount() < 10) {
 					if ("true".equals(setDefault)) {
 						stripe.customer()
 							.update(customer)

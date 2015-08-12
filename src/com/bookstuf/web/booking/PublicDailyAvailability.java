@@ -16,6 +16,7 @@ import com.bookstuf.datastore.Booking;
 
 public class PublicDailyAvailability {
 	public final int index;
+	public final LocalDate day;
 	public final String dayOfWeek;
 	public final String month;
 	public final int monthNumber;
@@ -31,6 +32,7 @@ public class PublicDailyAvailability {
 		final TreeMap<LocalTime, Availability> professionalAvailability
 	) {
 		this.index = index;
+		this.day = day;
 		this.dayOfWeek = day.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.US);
 		this.month = day.getMonth().getDisplayName(TextStyle.FULL, Locale.US);
 		this.monthNumber = day.getMonthValue();
@@ -68,15 +70,6 @@ public class PublicDailyAvailability {
 			if (previousSlotIsAvailable && currentSlotIsBooked) {
 				currentBookedRange = new PublicBooking(t);
 			}
-			
-			// consumer has an appointment at this time, add it directly
-			// so they can see what appointment it is
-			final Booking consumerBooking =
-				get(consumerAgenda, t);
-			
-			if (consumerBooking != null) {
-				bookedTimes.add(new PublicBooking(consumerBooking));
-			}
 		}
 		
 		// need to close out the final booked range of the day
@@ -85,17 +78,12 @@ public class PublicDailyAvailability {
 			bookedTimes.add(currentBookedRange);
 		}
 		
-	}
-	
-	private Booking get(
-		final TreeMap<LocalTime, Booking> consumerAgenda,
-		final LocalTime t
-	) {
+		// add consumer's agenda
 		if (consumerAgenda != null) {
-			return consumerAgenda.get(t);
-		} 
-		
-		return null;
+			for (final Booking b : consumerAgenda.values()) {
+				bookedTimes.add(new PublicBooking(b));
+			}
+		}
 	}
 
 	private <T> T floorValue(

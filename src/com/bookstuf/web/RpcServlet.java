@@ -9,6 +9,8 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -16,6 +18,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.bookstuf.appengine.RetryHelper;
+import com.bookstuf.web.booking.RequestError;
+import com.google.appengine.api.log.LogService.LogLevel;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonWriter;
 import com.google.inject.Inject;
@@ -30,6 +34,7 @@ public abstract class RpcServlet extends HttpServlet {
 	@Inject private Injector injector;
 	@Inject private RetryHelper retryHelper;
 	@Inject protected Gson gson;
+	@Inject protected Logger logger;
 	
 	private final HashMap<String, Handler> handlers;
 	private final HashMap<Class<? extends Throwable>, Method> exceptionHandlers;
@@ -221,7 +226,16 @@ public abstract class RpcServlet extends HttpServlet {
 				realCause.getClass();
 			
 			
-			if (exceptionHandlers.containsKey(causeClass)) {
+			if (realCause instanceof RequestError) {
+				try {
+					logger.log(Level.WARNING, "Reporting error on request", e);
+					response.getWriter().print("{\"success\": false, \"error\" : \"" + realCause.getMessage() + "\"}");
+					
+				} catch (IOException ioException) {
+					throw new RuntimeException(ioException);
+				}
+				
+			} else if (exceptionHandlers.containsKey(causeClass)) {
 				final Method exceptionHandler =
 					exceptionHandlers.get(causeClass);
 				

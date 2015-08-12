@@ -112,7 +112,7 @@ public abstract class StripeApiBase {
 				final HashMap<String, String> map =
 					new HashMap<String, String>();
 				
-				for (int i = 0; i < pairs.length; i++) {
+				for (int i = 0; i < pairs.length; i += 2) {
 					map.put(pairs[i], pairs[i + 1]);
 				}
 				

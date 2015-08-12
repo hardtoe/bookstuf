@@ -5,11 +5,9 @@ import org.threeten.bp.LocalTime;
 import com.bookstuf.datastore.Booking;
 
 public class PublicBooking {
-	public transient LocalTime startTimeObject;
-	
 	public final boolean isPrivate;
 	public final String title;
-	public String startTime;
+	public LocalTime startTime;
 	
 	public int top;
 	public int height;
@@ -30,8 +28,7 @@ public class PublicBooking {
 	}
 
 	private void setStartTime(final LocalTime time) {
-		this.startTimeObject = time;
-		this.startTime = time.toString();
+		this.startTime = time;
 		this.top = getPixels(time);
 	}
 	

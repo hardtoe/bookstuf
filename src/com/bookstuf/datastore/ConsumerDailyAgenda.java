@@ -21,6 +21,9 @@ public class ConsumerDailyAgenda extends DailyAgenda {
 		final String gitkitUserId,
 		final LocalDate date
 	) {
+		consumer =
+			Key.create(ConsumerInformation.class, gitkitUserId);
+		
 		ownerAndDate =
 			createKeyString(gitkitUserId, date);
 	}
@@ -35,7 +38,7 @@ public class ConsumerDailyAgenda extends DailyAgenda {
 
 	
 	@OnSave public void updateStripeCreditCardSet() {
-		stripeCardIds.clear();
+		stripeCardIds = new TreeSet<String>();
 		
 		for (final Booking booking : allBookings()) {
 			if (booking.getPaymentMethod() == PaymentMethod.STRIPE_CARD) {

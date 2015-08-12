@@ -60,6 +60,7 @@ import com.googlecode.objectify.util.Closeable;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Card;
 import com.stripe.model.Customer;
+import com.stripe.model.ExternalAccount;
 
 @Singleton
 @SuppressWarnings("serial")
@@ -105,7 +106,6 @@ public class BookingServlet extends RpcServlet {
 		final Result<ConsumerInformation> consumerInformationResult
 	) throws Exception {
 		// generate idempotent keys for stripe requests
-		final String customerCreateIdemKey = UUID.randomUUID().toString();
 		final String customerRetrieveIdemKey = UUID.randomUUID().toString();
 		final String cardAddIdemKey = UUID.randomUUID().toString();
 		
@@ -115,12 +115,22 @@ public class BookingServlet extends RpcServlet {
 				booking.setPaymentStatus(PaymentStatus.PENDING);
 				booking.setPaymentMethod(PaymentMethod.STRIPE_CARD);
 				
+				final ConsumerInformation consumerInformation =
+					consumerInformationResult.now();
+				
+				final boolean isNewStripeCustomer =
+					!consumerInformation.hasStripeCustomer();
+
+				final String customerCreateIdemKey = 
+					"CreateCustomer:" + consumerInformation.getGitkitUserId();
 				
 				// create/retrieve customer from stripe
-				final Customer stripeCustomer = request.isNewStripeCustomer ?
+				final Customer stripeCustomer = isNewStripeCustomer ?
 					stripe.customer()
 						.create()
 						.source(request.stripeToken)
+						.email(consumerInformation.getContactEmail())
+						.metadata("bookstuf.id", consumerInformation.getGitkitUserId())
 						.idempotencyKey(customerCreateIdemKey)
 						.get() :
 							
@@ -128,22 +138,18 @@ public class BookingServlet extends RpcServlet {
 						.retrieve(consumerInformationResult.now().getStripeCustomerId())
 						.idempotencyKey(customerRetrieveIdemKey)
 						.get();
-					
 						
 				// save new customer id to the datastore
-				if (request.isNewStripeCustomer) {
-					final ConsumerInformation consumerInformation =
-						consumerInformationResult.now();
-					
+				if (isNewStripeCustomer) {
 					consumerInformation.setStripeCustomerId(stripeCustomer.getId());
 
 					ofy().save().entity(consumerInformation);
 				} 
 				
 				final boolean addNewCardToExistingAccount =
-					!request.isNewStripeCustomer && 
+					!isNewStripeCustomer && 
 					request.addNewCard && 
-					stripeCustomer.getCards().getTotalCount() < 10;
+					stripeCustomer.getSources().getTotalCount() < 10;
 				
 				final Card card = 
 					 addNewCardToExistingAccount ? 
@@ -152,7 +158,10 @@ public class BookingServlet extends RpcServlet {
 							.idempotencyKey(cardAddIdemKey)
 							.get() : 
 						
-						getCard(stripeCustomer, request.cardId);
+						getCard(stripeCustomer, 
+							isNewStripeCustomer ? 
+								stripeCustomer.getDefaultSource() : 
+								request.cardId);
 
 				if (
 					addNewCardToExistingAccount && 
@@ -160,7 +169,8 @@ public class BookingServlet extends RpcServlet {
 				) {
 					stripe.customer()
 						.update(stripeCustomer)
-						.source(card.getId()).get();
+						.defaultSource(card.getId())
+						.get();
 				}
 							
 				// make sure the card won't expire before the appointment
@@ -313,10 +323,7 @@ public class BookingServlet extends RpcServlet {
 					return "{\"success\": true}";
 					
 				} else {
-					ofy().getTransaction().rollbackAsync();
-					
-					// ...report failure if we can't
-					return "{\"alreadyBooked\": true}";
+					throw new RequestError("That time slot is not available.");
 				}
 			}
 		});
@@ -362,9 +369,9 @@ public class BookingServlet extends RpcServlet {
 	) throws 
 		StripeException 
 	{
-		for (final Card card : stripeCustomer.getCards().getData()) {
+		for (final ExternalAccount card : stripeCustomer.getSources().getData()) {
 			if (card.getId().equals(cardId)) {
-				return card;
+				return (Card) card;
 			}
 		}
 		
@@ -544,12 +551,20 @@ public class BookingServlet extends RpcServlet {
 			final DayOfWeek dayOfWeek =
 				date.getDayOfWeek();
 	
+			final TreeMap<LocalTime, Booking> consumerExistingBookings = 
+				bookings(consumerDailyAgendaResult.get(consumerAgendaIterator.next()));
+			
+			logger.log(Level.INFO, "consumerExistingBookings[" + date + "] = " + consumerExistingBookings);
+			
+			final TreeMap<LocalTime, Booking> professionalExistingBookings = 
+				bookings(professionalDailyAgendaResult.get(professionalAgendaIterator.next()));
+			
 			final PublicDailyAvailability publicDailyAvailability =
 				new PublicDailyAvailability(
 					index,
 					date, 
-					bookings(consumerDailyAgendaResult.get(consumerAgendaIterator.next())), 
-					bookings(professionalDailyAgendaResult.get(professionalAgendaIterator.next())), 
+					consumerExistingBookings, 
+					professionalExistingBookings, 
 					dailyAvailability.get(dayOfWeek));
 			
 			result.add(publicDailyAvailability);
