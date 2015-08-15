@@ -91,7 +91,7 @@ public class StripeApi extends StripeApiBase {
 		 *            >ISO code</a> for currency.
 		 * 
 		 */
-		public final CreateMethod create(final String amount,
+		public final CreateMethod create(final int amount,
 				final String currency) {
 			return new CreateMethod().set("amount", amount).set("currency",
 					currency);
@@ -208,7 +208,7 @@ public class StripeApi extends StripeApiBase {
 			 * see the application fees <a
 			 * href="/docs/connect/collecting-fees">documentation</a>.
 			 */
-			public final CreateMethod applicationFee(final String applicationFee) {
+			public final CreateMethod applicationFee(final int applicationFee) {
 				return set("application_fee", applicationFee);
 			}
 

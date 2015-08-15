@@ -229,7 +229,7 @@ public abstract class RpcServlet extends HttpServlet {
 			if (realCause instanceof RequestError) {
 				try {
 					logger.log(Level.WARNING, "Reporting error on request", e);
-					response.getWriter().print("{\"success\": false, \"error\" : \"" + realCause.getMessage() + "\"}");
+					error(response, realCause.getMessage());
 					
 				} catch (IOException ioException) {
 					throw new RuntimeException(ioException);
@@ -252,7 +252,15 @@ public abstract class RpcServlet extends HttpServlet {
 		}
 	}
 	
-	private Throwable getRealCause(final Throwable t) {
+	protected void error(
+		final HttpServletResponse response, 
+		final String message
+	) throws IOException {
+		response.getWriter().print("{\"success\": false, \"error\" : \"" + message + "\"}");
+		response.setStatus(400);
+	}
+	
+	protected Throwable getRealCause(final Throwable t) {
 		if (
 			t.getClass() == InvocationTargetException.class ||
 			t.getClass() == ProvisionException.class ||

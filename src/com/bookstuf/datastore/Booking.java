@@ -6,11 +6,16 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
 import org.threeten.bp.LocalTime;
+import org.threeten.bp.ZonedDateTime;
 
+import com.bookstuf.PublicReadOnly;
 import com.googlecode.objectify.Key;
 
 public class Booking implements Serializable {
 	private static final long serialVersionUID = 1L;
+	
+	@PublicReadOnly
+	String id;
 	
 	Key<ProfessionalInformation> professional;
 	Key<ConsumerInformation> consumer;
@@ -19,9 +24,7 @@ public class Booking implements Serializable {
 	
 	PaymentMethod paymentMethod;
 	String stripeCustomerId;
-	String stripeCardId;
-	
-	PaymentStatus paymentStatus;
+	String stripeChargeId;
 	
 	/* (non-Javadoc)
 	 * @see java.lang.Object#hashCode()
@@ -33,16 +36,12 @@ public class Booking implements Serializable {
 		result = prime * result
 				+ ((consumer == null) ? 0 : consumer.hashCode());
 		result = prime * result
-				+ ((paymentStatus == null) ? 0 : paymentStatus.hashCode());
-		result = prime * result
 				+ ((paymentMethod == null) ? 0 : paymentMethod.hashCode());
 		result = prime * result
 				+ ((professional == null) ? 0 : professional.hashCode());
 		result = prime * result + ((service == null) ? 0 : service.hashCode());
 		result = prime * result
 				+ ((startTime == null) ? 0 : startTime.hashCode());
-		result = prime * result
-				+ ((stripeCardId == null) ? 0 : stripeCardId.hashCode());
 		result = prime
 				* result
 				+ ((stripeCustomerId == null) ? 0 : stripeCustomerId.hashCode());
@@ -71,9 +70,6 @@ public class Booking implements Serializable {
 		} else if (!consumer.equals(other.consumer)) {
 			return false;
 		}
-		if (paymentStatus != other.paymentStatus) {
-			return false;
-		}
 		if (paymentMethod != other.paymentMethod) {
 			return false;
 		}
@@ -98,13 +94,6 @@ public class Booking implements Serializable {
 		} else if (!startTime.equals(other.startTime)) {
 			return false;
 		}
-		if (stripeCardId == null) {
-			if (other.stripeCardId != null) {
-				return false;
-			}
-		} else if (!stripeCardId.equals(other.stripeCardId)) {
-			return false;
-		}
 		if (stripeCustomerId == null) {
 			if (other.stripeCustomerId != null) {
 				return false;
@@ -120,7 +109,9 @@ public class Booking implements Serializable {
 	) throws 
 		IOException 
 	{
-		out.writeLong(serialVersionUID);
+		out.writeLong(2); // version
+		
+		out.writeObject(id);
 		out.writeObject(professional);
 		out.writeObject(consumer);
 		out.writeObject(service);
@@ -128,9 +119,7 @@ public class Booking implements Serializable {
 		
 		out.writeObject(paymentMethod);
 		out.writeObject(stripeCustomerId);
-		out.writeObject(stripeCardId);
-		
-		out.writeObject(paymentStatus);
+		out.writeObject(stripeChargeId);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -140,7 +129,9 @@ public class Booking implements Serializable {
 		IOException, 
 		ClassNotFoundException 
 	{
-		in.readLong(); // version
+		final long version = in.readLong(); 
+
+		id = (String) in.readObject();
 		professional = (Key<ProfessionalInformation>) in.readObject();
 		consumer = (Key<ConsumerInformation>) in.readObject();
 		service = (Service) in.readObject();
@@ -148,9 +139,7 @@ public class Booking implements Serializable {
 		
 		paymentMethod = (PaymentMethod) in.readObject();
 		stripeCustomerId = (String) in.readObject();
-		stripeCardId = (String) in.readObject();
-		
-		paymentStatus = (PaymentStatus) in.readObject();
+		stripeChargeId = (String) in.readObject();
 	}
 
 	public Key<ProfessionalInformation> getProfessional() {
@@ -185,10 +174,6 @@ public class Booking implements Serializable {
 		this.startTime = startTime;
 	}
 
-	public static long getSerialversionuid() {
-		return serialVersionUID;
-	}
-
 	public PaymentMethod getPaymentMethod() {
 		return paymentMethod;
 	}
@@ -205,19 +190,15 @@ public class Booking implements Serializable {
 		this.stripeCustomerId = stripeCustomerId;
 	}
 
-	public String getStripeCardId() {
-		return stripeCardId;
+	public void setStripeChargeId(final String id) {
+		this.stripeChargeId = id;
 	}
-
-	public void setStripeCardId(String stripeCardId) {
-		this.stripeCardId = stripeCardId;
+	
+	public String getId() {
+		return this.id;
 	}
-
-	public PaymentStatus getPaymentStatus() {
-		return paymentStatus;
-	}
-
-	public void setPaymentStatus(PaymentStatus paymentStatus) {
-		this.paymentStatus = paymentStatus;
+	
+	public void setId(final String id) {
+		this.id = id;
 	}
 }

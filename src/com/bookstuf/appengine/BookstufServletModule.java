@@ -8,8 +8,13 @@ import com.bookstuf.web.StripeServlet;
 import com.bookstuf.web.GitkitWidgetServlet;
 import com.bookstuf.web.ProfessionalInformationServlet;
 import com.bookstuf.web.WarmupServlet;
+import com.bookstuf.web.billing.BillingCronServlet;
+import com.bookstuf.web.billing.SchemaUpdateServlet;
 import com.bookstuf.web.booking.BookingServlet;
 import com.bookstuf.web.card.CardServlet;
+import com.google.appengine.tools.mapreduce.MapReduceServlet;
+import com.google.appengine.tools.mapreduce.servlets.ShufflerServlet;
+import com.google.appengine.tools.pipeline.impl.servlets.PipelineServlet;
 import com.google.inject.servlet.ServletModule;
 import com.googlecode.objectify.ObjectifyFilter;
 
@@ -18,6 +23,15 @@ class BookstufServletModule extends ServletModule {
 	protected void configureServlets() {
 		filter("/*").through(ObjectifyFilter.class);
 		filter("/*").through(HttpsRedirectFilter.class);
+		
+
+		serve("/_ah/pipeline/*").with(PipelineServlet.class);
+		serve("/mapreduce/*").with(MapReduceServlet.class);
+		//serve("/shufflerServlet/*").with(ShufflerServlet.class);
+		
+		//serve("/secure/billing-cron").with(BillingCronServlet.class);
+		serve("/secure/schema-update").with(SchemaUpdateServlet.class);
+
 		
 		serve("/gitkit").with(GitkitWidgetServlet.class);
 		serve("/login").with(LoginServlet.class);

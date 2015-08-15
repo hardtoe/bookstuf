@@ -10,6 +10,7 @@ public class BookingRequest {
 	public String serviceId;
 	public LocalDate date;
 	public LocalTime startTime;
+	public String timeZone;
 	
 	/**
 	 * Cash or Credit

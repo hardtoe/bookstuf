@@ -3,6 +3,7 @@ package com.bookstuf.appengine;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
+import com.bookstuf.datastore.Bill;
 import com.bookstuf.datastore.ConsumerInformation;
 import com.bookstuf.datastore.DailyAgenda;
 import com.bookstuf.datastore.ConsumerDailyAgenda;
@@ -18,6 +19,7 @@ public class BookstufServletContextListener implements ServletContextListener {
 		ObjectifyService.register(DailyAgenda.class);
 		ObjectifyService.register(ConsumerDailyAgenda.class);
 		ObjectifyService.register(ProfessionalPrivateInformation.class);
+		ObjectifyService.register(Bill.class);
 	}
 	
 	@Override

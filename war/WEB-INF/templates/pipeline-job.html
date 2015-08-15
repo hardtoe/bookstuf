@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<script type="text/javascript">
+			// https redirect workaround for static files
+			if (window.location.protocol != "https:") {
+				window.location.replace(window.location.href.replace("http://", "https://").replace("//bookstuf.com", "//www.bookstuf.com"));
+			}
+		</script>
+		
+		<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		
+		<!-- jQuery -->
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+		
+		<!-- Hogan -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/hogan.js/3.0.2/hogan.min.js"></script>
+		
+		<!-- JavaScript Cookie -->
+		<script src="/cookie.js"></script>
+		
+		<!-- gitkit -->
+		<script type="text/javascript" src="https://www.gstatic.com/authtoolkit/js/gitkit.js"></script>
+		<link type=text/css rel=stylesheet href="https://www.gstatic.com/authtoolkit/css/gitkit.css" />
+
+		<!-- dropzone.js -->
+		<script src="dropzone.js"></script>
+		<link type=text/css rel=stylesheet href="/dropzone.css" />
+
+		<!-- bookstuf -->
+		<script type="text/javascript" src="/bookstuf.js"></script>
+		<link type=text/css rel=stylesheet href="/bookstuf.css" />
+			
+		<!-- Stripe -->	
+		<script type="text/javascript" src="https://js.stripe.com/v2/"></script>	
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery.payment/1.3.2/jquery.payment.min.js"></script>	
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/3.1.62/jquery.inputmask.bundle.min.js"></script>
+			
+		<!-- material design light -->
+		<link rel="stylesheet" href="https://storage.googleapis.com/code.getmdl.io/1.0.0/material.blue-red.min.css">
+		<script src="https://storage.googleapis.com/code.getmdl.io/1.0.0/material.min.js"></script>
+		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
+
+		<title>bookstuf.com - Pipeline job configuration for {{jobName}}</title>
+	</head>
+
+	<body>
+		<h2>Pipeline job configuration for {{jobName}}</h2>
+	
+		<form method="get" action="{{url}}">
+			{{#input}}
+				{{#isSelect}}
+				<div class="group">    
+					<select id="{{name}}" name="{{name}}" class="valid">
+						{{#values}}
+						<option value="{{.}}">
+							{{.}}
+						</option>
+						{{/values}}
+					</select>
+					<span class="bar"></span>
+					<label class="select-label">{{name}}</label>
+				</div><br />
+				{{/isSelect}}
+				
+				{{#isText}}
+				<div class="labeless-field mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+					<input class="mdl-textfield__input" type="text" id="{{name}}" name="{{name}}" />
+					<label class="mdl-textfield__label" for="{{name}}">{{name}}</label>
+				</div><br />
+				{{/isText}}
+			
+			{{/input}}
+			<input type="hidden" name="runjob" value="true" />			
+			<input type="submit"  style="margin-top: 15px;" class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored mdl-js-ripple-effect" id="book-now-button" />	
+			
+		</form>	
+	</body>
+</html>

@@ -1,11 +1,14 @@
 package com.bookstuf.appengine;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
+import java.net.SocketTimeoutException;
 import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.net.ssl.SSLHandshakeException;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
@@ -31,10 +34,14 @@ import com.google.identitytoolkit.GitkitUser;
 import com.google.inject.name.Named;
 import com.google.inject.Singleton;
 import com.google.appengine.api.ThreadManager;
+import com.google.appengine.api.datastore.DatastoreFailureException;
 import com.google.appengine.api.datastore.DatastoreTimeoutException;
 import com.google.appengine.api.taskqueue.TransientFailureException;
 import com.google.appengine.api.urlfetch.URLFetchService;
 import com.google.appengine.api.urlfetch.URLFetchServiceFactory;
+import com.google.appengine.tools.mapreduce.MapReduceServlet;
+import com.google.appengine.tools.mapreduce.servlets.ShufflerServlet;
+import com.google.appengine.tools.pipeline.impl.servlets.PipelineServlet;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.inject.AbstractModule;
@@ -47,6 +54,13 @@ public class BookstufLogicModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(ObjectifyFilter.class).in(Singleton.class);
+
+
+		bind(PipelineServlet.class).in(Singleton.class);
+		bind(MapReduceServlet.class).in(Singleton.class);
+		//bind(ShufflerServlet.class).in(Singleton.class);
+		
+		
 		bind(URLFetchService.class).toInstance(URLFetchServiceFactory.getURLFetchService());
 		bind(KeyStore.class).to(DevKeyStore.class);
 	}
@@ -173,7 +187,12 @@ public class BookstufLogicModule extends AbstractModule {
 		
 		retriableExceptions.add(TransientFailureException.class);
 		retriableExceptions.add(DatastoreTimeoutException.class);
+		retriableExceptions.add(DatastoreFailureException.class);
 		retriableExceptions.add(ConcurrentModificationException.class);
+		
+		retriableExceptions.add(IOException.class);
+		retriableExceptions.add(SocketTimeoutException.class);
+		retriableExceptions.add(SSLHandshakeException.class);
 		
 		return retriableExceptions;
 	}

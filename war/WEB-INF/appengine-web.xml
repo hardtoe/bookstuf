@@ -37,4 +37,8 @@
 	<static-files>
 		<include path="/**.*" expiration="10s" />
 	</static-files>
+	
+	<admin-console>
+		<page name="Pipeline Jobs" url="/_ah/pipeline/list" />
+	</admin-console>
 </appengine-web-app>

@@ -1,6 +1,7 @@
 package com.bookstuf.web.booking;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
@@ -20,6 +21,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.threeten.bp.DayOfWeek;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.LocalTime;
+import org.threeten.bp.ZoneId;
+import org.threeten.bp.ZonedDateTime;
 
 import static com.googlecode.objectify.ObjectifyService.ofy;
 
@@ -35,6 +38,7 @@ import com.bookstuf.datastore.DailyAgenda;
 import com.bookstuf.datastore.PaymentMethod;
 import com.bookstuf.datastore.PaymentStatus;
 import com.bookstuf.datastore.ProfessionalInformation;
+import com.bookstuf.datastore.ProfessionalPrivateInformation;
 import com.bookstuf.datastore.Service;
 import com.bookstuf.web.Default;
 import com.bookstuf.web.ExceptionHandler;
@@ -46,6 +50,7 @@ import com.bookstuf.web.card.ExpiredCardException;
 import com.google.appengine.api.datastore.DatastoreFailureException;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.SettableFuture;
 import com.google.identitytoolkit.GitkitClientException;
 import com.google.identitytoolkit.GitkitUser;
 import com.google.inject.Inject;
@@ -57,8 +62,10 @@ import com.googlecode.objectify.NotFoundException;
 import com.googlecode.objectify.ObjectifyService;
 import com.googlecode.objectify.Result;
 import com.googlecode.objectify.util.Closeable;
+import com.stripe.exception.CardException;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Card;
+import com.stripe.model.Charge;
 import com.stripe.model.Customer;
 import com.stripe.model.ExternalAccount;
 
@@ -96,23 +103,24 @@ public class BookingServlet extends RpcServlet {
 	private void handleCashPaymentMethod(
 		final Booking booking
 	) {
-		booking.setPaymentStatus(PaymentStatus.PENDING);
 		booking.setPaymentMethod(PaymentMethod.CASH);
 	}
 	
 	private void handleStripeCardPaymentMethod(
 		final Booking booking, 
 		final BookingRequest request,
-		final Result<ConsumerInformation> consumerInformationResult
+		final Result<ConsumerInformation> consumerInformationResult,
+		final Result<ProfessionalPrivateInformation> professionalPrivateInfoResult, 
+		final SettableFuture<Service> serviceFuture
 	) throws Exception {
 		// generate idempotent keys for stripe requests
 		final String customerRetrieveIdemKey = UUID.randomUUID().toString();
 		final String cardAddIdemKey = UUID.randomUUID().toString();
+		final String chargeIdemKey = UUID.randomUUID().toString();
 		
 		retryHelper.transactNew(10000, new Callable<Void>() {
 			@Override
 			public Void call() throws Exception {
-				booking.setPaymentStatus(PaymentStatus.PENDING);
 				booking.setPaymentMethod(PaymentMethod.STRIPE_CARD);
 				
 				final ConsumerInformation consumerInformation =
@@ -172,19 +180,38 @@ public class BookingServlet extends RpcServlet {
 						.defaultSource(card.getId())
 						.get();
 				}
-							
-				// make sure the card won't expire before the appointment
-				if (cardWillBeExpired(card, request.date)) {
-					throw new ExpiredCardException(
-						card.getExpYear().intValue(), 
-						card.getExpMonth().intValue());
-				}
-				
 				
 				// set stripe billing information into the booking
 				booking.setStripeCustomerId(stripeCustomer.getId());
-				booking.setStripeCardId(card.getId());
 				
+				
+				final int amount = 
+					serviceFuture.get().getCost().multiply(new BigDecimal(100)).intValue();
+				
+				final int stripeFee =
+					((amount * 29) / 1000) + 30;
+				
+				final int bookstufFee =
+					amount / 100;
+				
+				logger.info(String.format("amount: %d, stripe fee: %d, bookstuf fee: %d", amount, stripeFee, bookstufFee));
+
+				
+				final String professionalStripeAccountId =
+					professionalPrivateInfoResult.now().getStripeUserId();
+				
+				final Charge charge =
+					stripe.charge()
+						.create(amount, "usd")
+						.customer(booking.getStripeCustomerId())
+						.source(card.getId())
+						.destination(professionalStripeAccountId)
+						.applicationFee(stripeFee + bookstufFee)
+						.metadata("bookstuf.booking.id", booking.getId()) 
+						.idempotencyKey(chargeIdemKey)
+						.get();
+				
+				booking.setStripeChargeId(charge.getId());
 				
 				return null;	
 			} // call
@@ -194,10 +221,17 @@ public class BookingServlet extends RpcServlet {
 
 	private ListenableFuture<Void> handlePaymentMethod(
 		final Booking booking, 
-		final BookingRequest request
+		final BookingRequest request, 
+		final SettableFuture<Service> serviceFuture
 	) {
 		final Result<ConsumerInformation> consumerInformationResult =
 			userService.getCurrentConsumerInformation();
+
+		final Key<ProfessionalPrivateInformation> professionalPrivateKey =
+			Key.create(ProfessionalPrivateInformation.class, request.professionalUserId);
+		
+		final Result<ProfessionalPrivateInformation> professionalPrivateInfo =
+			ofy().transactionless().load().key(professionalPrivateKey);
 		
 		return execService.get().submit(new Callable<Void>() {
 			@Override
@@ -207,7 +241,12 @@ public class BookingServlet extends RpcServlet {
 				
 				try {
 					if (request.paymentMethod == PaymentMethod.STRIPE_CARD) {
-						handleStripeCardPaymentMethod(booking, request, consumerInformationResult);
+						handleStripeCardPaymentMethod(
+							booking, 
+							request, 
+							consumerInformationResult, 
+							professionalPrivateInfo,
+							serviceFuture);
 						
 					} else {
 						handleCashPaymentMethod(booking);
@@ -225,7 +264,6 @@ public class BookingServlet extends RpcServlet {
 	// TODO: consolidate error reporting format
 	// TODO: need to create handlers for all individual StripeException subclasses
 	
-	// TODO: initiate charge request for user in cron job, handle cash-only transactions and add charge to professional account
 	
 	// TODO: send confirmation email to professional
 	// TODO: send confirmation email to consumer
@@ -240,12 +278,18 @@ public class BookingServlet extends RpcServlet {
 		final Booking requestedBooking =
 			new Booking();
 		
+		requestedBooking.setId(UUID.randomUUID().toString());
 		
+		/*
 		// payment can be handled in parallel.  it could take a long time for
 		// roundtrips to both datastore and stripe's servers if needed.
 		final ListenableFuture<Void> paymentMethodStatus =
-			handlePaymentMethod(requestedBooking, request);
-
+			handlePaymentMethod(requestedBooking, request, serviceFuture);
+		*/
+		final PaymentSystem paymentSystem =
+			getPaymentSystem(request.paymentMethod);
+		
+		paymentSystem.prepare();
 		
 		// need to prepare as much information outside of transaction as 
 		// possible to ensure transaction can execute as fast as possible
@@ -268,63 +312,88 @@ public class BookingServlet extends RpcServlet {
 		return retryHelper.transactNew(10000, new Callable<String>() {
 			@Override
 			public String call() throws Exception {
-				// initiate fetch for daily agendas
-				final Result<DailyAgenda> professionalDailyAgendaResult =
-					getProfessionalDailyAgenda(request.professionalUserId, request.date);
-				
-				final Result<ConsumerDailyAgenda> consumerDailyAgendaResult =
-					getConsumerDailyAgenda(consumerKey, consumerUserId, request.date);
-
-				final LoadResult<ProfessionalInformation> professionalInfoResult =
-					ofy().load().key(professionalKey);
-
-
-				// wait for the daily agendas to be ready
-				final DailyAgenda professionalDailyAgenda =
-					professionalDailyAgendaResult.now();
-				
-				final ConsumerDailyAgenda consumerDailyAgenda =
-					consumerDailyAgendaResult.now();
-				
-				final ProfessionalInformation professionalInfo = 
-					professionalInfoResult.safe();
-				
-				final LinkedList<Availability> availability =
-					professionalInfo.getAvailability();
-
-				final Service service =
-					professionalInfo.getService(request.serviceId);
-				
-				requestedBooking.setService(service);
-				
-				// need to wait for payment method to finish updating the booking 
-				// with payment information and give it the opportunity to throw 
-				// an exception and cancel the booking
-				paymentMethodStatus.get();
-				
-				
-				// see if we can make the booking...
-				if (
-					isAvailable(request.date.getDayOfWeek(), availability, requestedBooking) &&
-					professionalDailyAgenda.canAdd(requestedBooking) &&
-					consumerDailyAgenda.canAdd(requestedBooking)
-				) {
-					// ...make it if we can...
-					professionalDailyAgenda.add(requestedBooking);
-					consumerDailyAgenda.add(requestedBooking);
+				try {
+					// initiate fetch for daily agendas
+					final Result<DailyAgenda> professionalDailyAgendaResult =
+						getProfessionalDailyAgenda(request.professionalUserId, request.date);
 					
-					// professional daily agenda is used to manage booking payment
+					final Result<ConsumerDailyAgenda> consumerDailyAgendaResult =
+						getConsumerDailyAgenda(consumerKey, consumerUserId, request.date);
+	
+					final LoadResult<ProfessionalInformation> professionalInfoResult =
+						ofy().load().key(professionalKey);
+	
+	
+					// wait for the daily agendas to be ready
+					final DailyAgenda professionalDailyAgenda =
+						professionalDailyAgendaResult.now();
 					
-					// save daily agendas back to the datastore
-					ofy().save().entity(professionalDailyAgenda);
-					ofy().save().entity(consumerDailyAgenda);
+					final ConsumerDailyAgenda consumerDailyAgenda =
+						consumerDailyAgendaResult.now();
 					
-					// ...and report success
-					return "{\"success\": true}";
+					final ProfessionalInformation professionalInfo = 
+						professionalInfoResult.safe();
 					
-				} else {
-					throw new RequestError("That time slot is not available.");
+					final LinkedList<Availability> availability =
+						professionalInfo.getAvailability();
+	
+					final Service service =
+						professionalInfo.getService(request.serviceId);
+					
+					requestedBooking.setService(service);
+									
+					// see if we can make the booking...
+					// FIXME: need to see if the booking has already been made for this customer!
+					//        datastore transactions must be idempotent
+					if (
+						isAvailable(request.date.getDayOfWeek(), availability, requestedBooking) &&
+						professionalDailyAgenda.canAdd(requestedBooking) &&
+						consumerDailyAgenda.canAdd(requestedBooking)				
+					) {
+						if (paymentSystem.isPaymentLikely()) {
+							// FIXME: need to handle case where we can't access stripe and we are
+							//        not sure if the charge went through or not, but we fail the booking
+							//        anyways
+							//
+							//        need to send email to luke and put task in task queue to search for 
+							//        a charge and refund it if found
+							paymentSystem.execute(service.getCost());
+							
+							// ...make it if we can...
+							professionalDailyAgenda.add(requestedBooking);
+							consumerDailyAgenda.add(requestedBooking);
+							
+							// save daily agendas back to the datastore
+							ofy().save().entity(professionalDailyAgenda);
+							ofy().save().entity(consumerDailyAgenda);
+							
+							paymentSystem.throwErrorIfPresent();
+							
+							// FIXME: also need to handle the case where the stripe charge may have gone through
+							//        but we exhaust our transaction retries attempting to commit the transaction
+						} else {
+							throw new RequestError("Unable to setup account for payment.");
+						}
+					} else {
+						throw new RequestError("That time slot is not available.");
+					}
+				} catch (final Throwable throwable) {
+					final Throwable t =
+						getRealCause(throwable);
+					
+					if (t instanceof CardException) {
+						throw new RequestError(t.getMessage());
+						
+					} else if (t instanceof RequestError) {
+						throw (RequestError) t;
+						
+					} else {
+						throw new RequestError("An internal error occured, try again later.");
+					}
+					
 				}
+				
+				return "{\"success\": true}";
 			}
 		});
 	}
@@ -343,13 +412,16 @@ public class BookingServlet extends RpcServlet {
 				final LocalTime availEndTime =
 					LocalTime.of(a.getEndHour(), a.getEndMinute());
 				
+				final LocalTime bookingStartTime = 
+					requestedBooking.getStartTime();
+				
 				final LocalTime bookingEndTime =
-					requestedBooking.getStartTime().plus(requestedBooking.getService().getDuration());
+					bookingStartTime.plus(requestedBooking.getService().getDuration());
 				
 				if (
 					(
-						requestedBooking.getStartTime().equals(availStartTime) ||
-						requestedBooking.getStartTime().isAfter(availStartTime)
+						bookingStartTime.equals(availStartTime) ||
+						bookingStartTime.isAfter(availStartTime)
 					) && (
 						bookingEndTime.equals(availEndTime) ||
 						bookingEndTime.isBefore(availEndTime)
@@ -620,15 +692,6 @@ public class BookingServlet extends RpcServlet {
 		}
 		
 		return null;
-	}
-	
-	@ExceptionHandler(ExpiredCardException.class) 
-	private void handleExpiredCardException(
-		final HttpServletResponse response
-	) throws 
-		IOException 
-	{
-		response.getWriter().println("{\"unableToProcessCard\": true}");
 	}
 	
 	@ExceptionHandler(DatastoreFailureException.class) 

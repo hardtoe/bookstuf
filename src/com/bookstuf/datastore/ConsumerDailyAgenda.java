@@ -15,8 +15,6 @@ import com.googlecode.objectify.annotation.Parent;
 public class ConsumerDailyAgenda extends DailyAgenda {
 	@Parent Key<ConsumerInformation> consumer;
 	
-	@Index TreeSet<String> stripeCardIds;
-	
 	public void setOwnerAndDate(
 		final String gitkitUserId,
 		final LocalDate date
@@ -34,16 +32,5 @@ public class ConsumerDailyAgenda extends DailyAgenda {
 		final LocalDate date
 	) {
 		return Key.create(parentKey, ConsumerDailyAgenda.class, createKeyString(gitkitUserId, date));
-	}
-
-	
-	@OnSave public void updateStripeCreditCardSet() {
-		stripeCardIds = new TreeSet<String>();
-		
-		for (final Booking booking : allBookings()) {
-			if (booking.getPaymentMethod() == PaymentMethod.STRIPE_CARD) {
-				stripeCardIds.add(booking.getStripeCardId());
-			}
-		}
 	}
 }

@@ -1,12 +1,14 @@
 package com.bookstuf.datastore;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.LocalTime;
+import org.threeten.bp.ZoneOffset;
 
 import com.googlecode.objectify.Key;
 import com.googlecode.objectify.annotation.Cache;
@@ -25,6 +27,8 @@ public class DailyAgenda {
 	@Index int numBookings;
 	@Index boolean hasBookings;
 	
+	@Index Date date;
+	
 	public DailyAgenda() {
 		this.bookings = new TreeMap<LocalTime, Booking>();
 	}
@@ -33,8 +37,15 @@ public class DailyAgenda {
 		final String gitkitUserId,
 		final LocalDate date
 	) {
-		ownerAndDate =
+		this.ownerAndDate =
 			createKeyString(gitkitUserId, date);
+		
+		this.date =
+			new Date(date.atTime(0, 0).toEpochSecond(ZoneOffset.UTC) * 1000L);
+	}
+	
+	private static Date fromLocalDate(final LocalDate localDate) {
+		return new Date(localDate.atTime(0, 0).toEpochSecond(ZoneOffset.UTC) * 1000L);
 	}
 	
 	protected static String createKeyString(
@@ -121,6 +132,10 @@ public class DailyAgenda {
 	@OnSave public void onSave() {
 		numBookings = bookings.size();
 		hasBookings = numBookings > 0;
+		
+		if (date == null) {
+			date = fromLocalDate(getDate());
+		}
 	}
 
 	public TreeMap<LocalTime, Booking> bookingMap() {

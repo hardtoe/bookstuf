@@ -1,6 +1,7 @@
 package com.bookstuf.web.booking;
 
 import org.threeten.bp.LocalTime;
+import org.threeten.bp.ZoneId;
 
 import com.bookstuf.datastore.Booking;
 
@@ -23,8 +24,11 @@ public class PublicBooking {
 		this.isPrivate = false;
 		this.title = consumerBooking.getService().getName();
 		
-		setStartTime(consumerBooking.getStartTime());
-		setEndTime(consumerBooking.getStartTime().plus(consumerBooking.getService().getDuration()));
+		final LocalTime consumerBookingStartTime = 
+			consumerBooking.getStartTime();
+		
+		setStartTime(consumerBookingStartTime);
+		setEndTime(consumerBookingStartTime.plus(consumerBooking.getService().getDuration()));
 	}
 
 	private void setStartTime(final LocalTime time) {

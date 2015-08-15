@@ -73,8 +73,15 @@
 			<div class="group">    
 				<select id="cardId" class="valid">
 					<option {{#cardsFull}}disabled{{/cardsFull}} {{#noCards}}selected{{/noCards}} value="addNewCard">
-						Add new card
+						New credit card
 					</option>
+
+					{{#cash}}
+					<option value="cash">
+						Cash
+					</option>
+					{{/cash}}
+
 					{{#cards}}
 					<option {{#deleted}}disabled{{/deleted}} {{#isDefault}}selected{{/isDefault}} value="{{id}}">
 						{{brand}} ending in {{last4}}, exp. {{expMonth}}/{{expYear}}
@@ -82,7 +89,7 @@
 					{{/cards}}
 				</select>
 				<span class="bar"></span>
-				<label class="select-label">Credit Card</label>
+				<label class="select-label">Payment method</label>
 			</div>
 		</script>
 
@@ -280,27 +287,7 @@
 				});
 			}
 		
-			$(function() {
-
-				var id = 
-					getUrlParameter("id");
-				
-				calendarTemplate = 
-					Hogan.compile($('#calendar-template').html());
-				
-				loadCalendar(function() {
-					window.scrollTo(0, 375);
-				});
-
-			
-				
-				$('#cc-number').payment('formatCardNumber');
-				$('#cc-exp').payment('formatCardExpiry');
-				$('#cc-cvc').payment('formatCardCVC');
-				
-				var cardTemplate = 
-					Hogan.compile($('#card-template').html());
-				
+			function loadCards() {
 				$.get('/cards/all')
 				.done(function(data) {
 					var cardData = 
@@ -339,6 +326,30 @@
 						}
 					});
 				});
+			}
+			
+			$(function() {
+
+				var id = 
+					getUrlParameter("id");
+				
+				calendarTemplate = 
+					Hogan.compile($('#calendar-template').html());
+				
+				loadCalendar(function() {
+					window.scrollTo(0, 375);
+				});
+
+			
+				
+				$('#cc-number').payment('formatCardNumber');
+				$('#cc-exp').payment('formatCardExpiry');
+				$('#cc-cvc').payment('formatCardCVC');
+				
+				var cardTemplate = 
+					Hogan.compile($('#card-template').html());
+				
+				loadCards();
 
 				
 				
@@ -389,18 +400,20 @@
 							'cardId' : $('#cardId').val()
 							
 						})).done(function(data) {
-
-							// TODO: goto confirmation page ?
+							// TODO: need some more confirmation
 							loadCalendar(function() {
 								$('#book-now-button').prop('disabled', false);
 							});
 
 							
 						}).fail(function(data) {
-							// TODO: handle errors
-							$('.payment-errors').text('Unable to create booking');
+							var rsp = JSON.parse(data.responseText);
+							var msg = rsp['error'];
+
+							$('.payment-errors').text(msg);
 							$('#book-now-button').prop('disabled', false);
 							loadCalendar(function() {});
+							loadCards();
 						});
 					};
 					
