@@ -230,7 +230,7 @@ public class BookingServlet extends RpcServlet {
 		    final Message msg = 
 		    	new MimeMessage(session);
 		    
-		    msg.setFrom(new InternetAddress("noreply@bookstuf.com", "Bookstuf Service"));
+		    msg.setFrom(new InternetAddress("noreply@bookstuf.com", "bookstuf.com"));
 		    msg.addRecipient(Message.RecipientType.TO, new InternetAddress(emailAddress));
 		    msg.setSubject("Booking confirmation for " + request.date);
 		    msg.setText("Your booking has been successfully placed.");
@@ -246,7 +246,7 @@ public class BookingServlet extends RpcServlet {
 		final BookingRequest request,
 		final Booking booking
 	) {
-		return new SingleBookingStrategy(request, booking);
+		return new SingleBookingStrategy(request, booking, retryHelper);
 	}
 
 	private PaymentStrategy getPaymentStrategy(
@@ -275,7 +275,7 @@ public class BookingServlet extends RpcServlet {
 				startDate.plusDays(i);
 
 			final Key<DailyAgenda> key =
-				DailyAgenda.createKey(professionalUserId, date);
+				DailyAgenda.createProfessionalKey(professionalUserId, date);
 			
 			keys.add(key);
 		}
@@ -296,7 +296,7 @@ public class BookingServlet extends RpcServlet {
 				startDate.plusDays(i);
 
 			final Key<ConsumerDailyAgenda> key =
-				ConsumerDailyAgenda.createKey(Key.create(ConsumerInformation.class, consumerUserId), consumerUserId, date);
+				ConsumerDailyAgenda.createConsumerKey(Key.create(ConsumerInformation.class, consumerUserId), date);
 			
 			keys.add(key);
 		}

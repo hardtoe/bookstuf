@@ -3,11 +3,16 @@ package com.bookstuf.web.booking;
 import static com.googlecode.objectify.ObjectifyService.ofy;
 
 import java.util.LinkedList;
+import java.util.concurrent.Callable;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.threeten.bp.DayOfWeek;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.LocalTime;
 
+import com.bookstuf.Luke;
+import com.bookstuf.appengine.RetryHelper;
 import com.bookstuf.datastore.Availability;
 import com.bookstuf.datastore.Booking;
 import com.bookstuf.datastore.ConsumerDailyAgenda;
@@ -15,14 +20,23 @@ import com.bookstuf.datastore.ConsumerInformation;
 import com.bookstuf.datastore.DailyAgenda;
 import com.bookstuf.datastore.ProfessionalInformation;
 import com.bookstuf.datastore.Service;
+import com.google.appengine.api.taskqueue.Queue;
+import com.google.appengine.api.taskqueue.QueueFactory;
+import com.google.appengine.api.taskqueue.TaskHandle;
+import com.google.appengine.api.taskqueue.TaskOptions;
 import com.googlecode.objectify.Key;
 import com.googlecode.objectify.LoadResult;
 import com.googlecode.objectify.NotFoundException;
 import com.googlecode.objectify.Result;
 
 public class SingleBookingStrategy extends BookingStrategy {
+	private static final Logger log = 
+		Logger.getLogger(SingleBookingStrategy.class.getCanonicalName());
+	
 	private final BookingRequest request;
 	private final Booking booking;
+	private final RetryHelper retryHelper;
+	
 	private DailyAgenda professionalDailyAgenda;
 	private ConsumerDailyAgenda consumerDailyAgenda;
 	private ProfessionalInformation professionalInfo;
@@ -30,10 +44,12 @@ public class SingleBookingStrategy extends BookingStrategy {
 	
 	public SingleBookingStrategy(
 		final BookingRequest request,
-		final Booking booking
+		final Booking booking,
+		final RetryHelper retryHelper
 	) {
 		this.request = request;
 		this.booking = booking;
+		this.retryHelper = retryHelper;
 	}
 	
 	@Override
@@ -92,7 +108,7 @@ public class SingleBookingStrategy extends BookingStrategy {
 		final LocalDate date
 	) {
 		final Key<DailyAgenda> key =
-			DailyAgenda.createKey(professionalUserId, date);
+			DailyAgenda.createProfessionalKey(professionalUserId, date);
 			
 		final LoadResult<DailyAgenda> result =
 			ofy().load().key(key);
@@ -123,7 +139,7 @@ public class SingleBookingStrategy extends BookingStrategy {
 			consumerKey.getName();
 		
 		final Key<ConsumerDailyAgenda> key =
-			ConsumerDailyAgenda.createKey(consumerKey, consumerUserId, date);
+			ConsumerDailyAgenda.createConsumerKey(consumerKey, date);
 		
 		final LoadResult<ConsumerDailyAgenda> result =
 			ofy().load().key(key);
@@ -181,5 +197,43 @@ public class SingleBookingStrategy extends BookingStrategy {
 		}
 		
 		return false;
+	}
+
+	@Override
+	public void rollbackBooking() {
+		log.log(Level.WARNING, "SingleBookingSystem.rollbackBooking() - enter");
+		log.log(Level.WARNING, "date = " + request.date);
+		log.log(Level.WARNING, "time = " + request.startTime);
+		log.log(Level.WARNING, "booking.id = " + booking.getId());
+		
+		try {
+			retryHelper.execute(10000, new Callable<TaskHandle>() {
+				@Override
+				public TaskHandle call() throws Exception {
+					log.log(Level.INFO, "attempting to enqueue BookingCleanupTask");
+					
+					final Queue q = 
+						QueueFactory.getQueue("booking-cleanup");
+					
+					return q.add(TaskOptions.Builder
+						.withPayload(new BookingCleanupTask(request.date, booking))
+						.taskName("BookingCleanupTask-" + booking.getId()));
+				}});
+			
+		} catch (final Throwable t) {
+			log.log(Level.SEVERE, "FATAL - ENQUEUE: failed to enqueue cleanup task! this booking id " + booking.getId() + " needs to be manually removed!", t);
+			
+			sendAdminEmail(t);
+		}
+	}
+	
+	private void sendAdminEmail(final Throwable t) {
+		Luke.sendEmail(
+			"booking cleanup failure for booking id " + booking.getId(), 
+			
+			"Could not enqueue booking cleanup for booking id " + booking.getId() + ".  \n" +
+			"This needs to be manually cleaned up.",
+		    		
+			t);
 	}
 }

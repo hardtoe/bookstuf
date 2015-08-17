@@ -2,6 +2,7 @@ package com.bookstuf.datastore;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -55,7 +56,7 @@ public class DailyAgenda {
 		return gitkitUserId + ":" + date.toString();
 	}
 	
-	public static Key<DailyAgenda> createKey(
+	public static Key<DailyAgenda> createProfessionalKey(
 		final String gitkitUserId,
 		final LocalDate date
 	) {
@@ -140,5 +141,22 @@ public class DailyAgenda {
 
 	public TreeMap<LocalTime, Booking> bookingMap() {
 		return bookings;
+	}
+
+	public boolean removeBooking(String id) {
+		final Iterator<Entry<LocalTime, Booking>> i = 
+			bookings.entrySet().iterator();
+		
+		while (i.hasNext()) {
+			final Booking booking =
+				i.next().getValue();
+			
+			if (booking.getId().equals(id)) {
+				i.remove();
+				return true;
+			}
+		}
+		
+		return false;
 	}
 }

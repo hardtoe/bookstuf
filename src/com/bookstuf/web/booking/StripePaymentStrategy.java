@@ -2,25 +2,14 @@ package com.bookstuf.web.booking;
 
 import static com.googlecode.objectify.ObjectifyService.ofy;
 
-import java.io.IOException;
-import java.io.PrintStream;
 import java.math.BigDecimal;
-import java.net.SocketTimeoutException;
-import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.mail.Message;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
-
-import org.apache.geronimo.mail.util.StringBufferOutputStream;
-
+import com.bookstuf.Luke;
 import com.bookstuf.appengine.RetryHelper;
 import com.bookstuf.appengine.StripeApi;
 import com.bookstuf.appengine.UserManager;
@@ -28,15 +17,12 @@ import com.bookstuf.datastore.Booking;
 import com.bookstuf.datastore.ConsumerInformation;
 import com.bookstuf.datastore.PaymentMethod;
 import com.bookstuf.datastore.ProfessionalPrivateInformation;
-import com.bookstuf.datastore.Service;
 import com.google.appengine.api.taskqueue.Queue;
 import com.google.appengine.api.taskqueue.QueueFactory;
 import com.google.appengine.api.taskqueue.TaskHandle;
 import com.google.appengine.api.taskqueue.TaskOptions;
-import com.google.appengine.api.urlfetch.ResponseTooLargeException;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.SettableFuture;
 import com.googlecode.objectify.Key;
 import com.googlecode.objectify.LoadResult;
 import com.googlecode.objectify.ObjectifyService;
@@ -271,7 +257,7 @@ public class StripePaymentStrategy extends PaymentStrategy {
 		log.log(Level.WARNING, "booking.id = " + booking.getId());
 		
 		try {
-			retryHelper.execute(1000, new Callable<TaskHandle>() {
+			retryHelper.execute(10000, new Callable<TaskHandle>() {
 				@Override
 				public TaskHandle call() throws Exception {
 					log.log(Level.INFO, "attempting to enqueue StripeChargeCleanupTask");
@@ -292,34 +278,13 @@ public class StripePaymentStrategy extends PaymentStrategy {
 	}
 	
 	private void sendAdminEmail(final Throwable t) {
-		Properties props = new Properties();
-		Session session = Session.getDefaultInstance(props, null);
-		
-		try {
-			final StringBuffer stackTrace =
-				new StringBuffer();
+		Luke.sendEmail(
+			"charge cleanup failure for booking id " + booking.getId(), 
 			
-			final StringBufferOutputStream stackTraceStream =
-				new StringBufferOutputStream(stackTrace);
-			
-			t.printStackTrace(new PrintStream(stackTraceStream));
-			
-		    final Message msg = 
-		    	new MimeMessage(session);
-		    
-		    msg.setFrom(new InternetAddress("noreply@bookstuf.com", "Bookstuf Service"));
-		    msg.addRecipient(Message.RecipientType.TO, new InternetAddress("luke.valenty@bookstuf.com"));
-		    msg.setSubject("cleanup failure for " + booking.getId());
-		    msg.setText(
-		    		"Could not enqueue stripe charge cleanup for booking id " + booking.getId() + ".  \n" +
-		    		"This will need to be cleaned up manually in the stripe dasheboard.  \n\n" +
-		    		"https://dashboard.stripe.com/search?query=" + booking.getId() + "\n\n" +
-		    		stackTrace.toString());
-		    
-		    Transport.send(msg);
-
-		} catch (final Exception e) {
-		    log.log(Level.SEVERE, "FATAL - EMAIL: unable to send admin failure email", e);
-		}
+			"Could not enqueue stripe charge cleanup for booking id " + booking.getId() + ".  \n" +
+    		"This will need to be cleaned up manually in the stripe dashboard.  \n\n" +
+    		"https://dashboard.stripe.com/search?query=" + booking.getId() + "\n\n",
+		    		
+			t);
 	}
 }

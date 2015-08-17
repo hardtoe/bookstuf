@@ -38,7 +38,7 @@ public class StripeChargeCleanupTask implements DeferredTask {
 
 	@Override
 	public void run() {
-		log.log(Level.INFO, "starting StripeChargeCleanupTask");
+		log.info("starting StripeChargeCleanupTask for booking id " + booking.getId());
 		try {			
 			final StripeApi stripe =
 				new StripeApi();
@@ -46,12 +46,16 @@ public class StripeChargeCleanupTask implements DeferredTask {
 			stripe.setKeyStore(new DevKeyStore());
 			
 			if (booking.getStripeChargeId() != null) {
+				log.info("found charge id in booking object and attempting fetch the charge object");
 				final Charge charge =
 					stripe.charge().retrieve(booking.getStripeChargeId()).get();
 				
+				log.info("got the charge object, attempting refund");
 				refund(stripe, charge);
 				
 			} else if (booking.getStripeCustomerId() != null) {
+				log.info("couldn't find charge id, going to fetch all charges for the customer from stripe");
+				
 				final ChargeCollection charges = 
 					stripe.charge().all().customer(booking.getStripeCustomerId()).get();
 				
@@ -59,6 +63,7 @@ public class StripeChargeCleanupTask implements DeferredTask {
 					findCharge(200, stripe, charges);
 				
 				if (charge != null) {
+					log.info("found the charge, attempting refund");
 					refund(stripe, charge);
 				}
 			}
@@ -107,6 +112,9 @@ public class StripeChargeCleanupTask implements DeferredTask {
 				.create(charge)
 				.metadata("reason", "bookstuf server was unable to guarantee booking was made due to datastore errors")
 				.get();
+			
+		} else {
+			log.info("oops, charge was already refunded");
 		}
 	}
 
