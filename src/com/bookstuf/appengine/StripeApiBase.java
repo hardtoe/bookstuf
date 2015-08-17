@@ -1,27 +1,14 @@
 package com.bookstuf.appengine;
 
-import java.math.BigDecimal;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.Callable;
-
-import org.threeten.bp.LocalDateTime;
-import org.threeten.bp.ZoneOffset;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.google.inject.Singleton;
 import com.stripe.Stripe;
-import com.stripe.exception.APIConnectionException;
-import com.stripe.exception.APIException;
-import com.stripe.exception.AuthenticationException;
-import com.stripe.exception.CardException;
-import com.stripe.exception.InvalidRequestException;
 import com.stripe.exception.StripeException;
-import com.stripe.model.Charge;
-import com.stripe.model.Customer;
 import com.stripe.net.RequestOptions;
 import com.stripe.net.RequestOptions.RequestOptionsBuilder;
 
@@ -30,11 +17,11 @@ import com.stripe.net.RequestOptions.RequestOptionsBuilder;
 public abstract class StripeApiBase {
 	private Provider<ListeningExecutorService> execService;
 
-	@Inject protected void setKeyStore(final KeyStore keyStore) {
+	@Inject public void setKeyStore(final KeyStore keyStore) {
 		Stripe.apiKey = keyStore.getStripeClientSecret();
 	}
 	
-	@Inject protected void setExecService(final Provider<ListeningExecutorService> execService) {
+	@Inject public void setExecService(final Provider<ListeningExecutorService> execService) {
 		this.execService = execService;
 	}
 	

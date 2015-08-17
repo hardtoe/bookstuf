@@ -1,7 +1,8 @@
 package com.bookstuf.web.booking;
 
 import java.io.IOException;
-import java.math.BigDecimal;
+import java.io.UnsupportedEncodingException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
@@ -9,20 +10,25 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Properties;
 
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
 import javax.servlet.http.HttpServletResponse;
 
 import org.threeten.bp.DayOfWeek;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.LocalTime;
-import org.threeten.bp.ZoneId;
-import org.threeten.bp.ZonedDateTime;
 
 import static com.googlecode.objectify.ObjectifyService.ofy;
 
@@ -36,9 +42,7 @@ import com.bookstuf.datastore.ConsumerInformation;
 import com.bookstuf.datastore.ConsumerDailyAgenda;
 import com.bookstuf.datastore.DailyAgenda;
 import com.bookstuf.datastore.PaymentMethod;
-import com.bookstuf.datastore.PaymentStatus;
 import com.bookstuf.datastore.ProfessionalInformation;
-import com.bookstuf.datastore.ProfessionalPrivateInformation;
 import com.bookstuf.datastore.Service;
 import com.bookstuf.web.Default;
 import com.bookstuf.web.ExceptionHandler;
@@ -46,11 +50,13 @@ import com.bookstuf.web.Param;
 import com.bookstuf.web.Publish;
 import com.bookstuf.web.RequestBody;
 import com.bookstuf.web.RpcServlet;
-import com.bookstuf.web.card.ExpiredCardException;
 import com.google.appengine.api.datastore.DatastoreFailureException;
-import com.google.common.util.concurrent.ListenableFuture;
+import com.google.appengine.api.datastore.DatastoreTimeoutException;
+import com.google.appengine.api.taskqueue.Queue;
+import com.google.appengine.api.taskqueue.QueueFactory;
+import com.google.appengine.api.taskqueue.TaskOptions;
+import com.google.appengine.api.urlfetch.ResponseTooLargeException;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.SettableFuture;
 import com.google.identitytoolkit.GitkitClientException;
 import com.google.identitytoolkit.GitkitUser;
 import com.google.inject.Inject;
@@ -58,16 +64,8 @@ import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.googlecode.objectify.Key;
 import com.googlecode.objectify.LoadResult;
-import com.googlecode.objectify.NotFoundException;
-import com.googlecode.objectify.ObjectifyService;
-import com.googlecode.objectify.Result;
-import com.googlecode.objectify.util.Closeable;
 import com.stripe.exception.CardException;
 import com.stripe.exception.StripeException;
-import com.stripe.model.Card;
-import com.stripe.model.Charge;
-import com.stripe.model.Customer;
-import com.stripe.model.ExternalAccount;
 
 @Singleton
 @SuppressWarnings("serial")
@@ -100,197 +98,11 @@ public class BookingServlet extends RpcServlet {
 		response.setStatus(404);
 	}
 	
-	private void handleCashPaymentMethod(
-		final Booking booking
+	
+	
+	private Booking createBooking(
+		final BookingRequest request
 	) {
-		booking.setPaymentMethod(PaymentMethod.CASH);
-	}
-	
-	private void handleStripeCardPaymentMethod(
-		final Booking booking, 
-		final BookingRequest request,
-		final Result<ConsumerInformation> consumerInformationResult,
-		final Result<ProfessionalPrivateInformation> professionalPrivateInfoResult, 
-		final SettableFuture<Service> serviceFuture
-	) throws Exception {
-		// generate idempotent keys for stripe requests
-		final String customerRetrieveIdemKey = UUID.randomUUID().toString();
-		final String cardAddIdemKey = UUID.randomUUID().toString();
-		final String chargeIdemKey = UUID.randomUUID().toString();
-		
-		retryHelper.transactNew(10000, new Callable<Void>() {
-			@Override
-			public Void call() throws Exception {
-				booking.setPaymentMethod(PaymentMethod.STRIPE_CARD);
-				
-				final ConsumerInformation consumerInformation =
-					consumerInformationResult.now();
-				
-				final boolean isNewStripeCustomer =
-					!consumerInformation.hasStripeCustomer();
-
-				final String customerCreateIdemKey = 
-					"CreateCustomer:" + consumerInformation.getGitkitUserId();
-				
-				// create/retrieve customer from stripe
-				final Customer stripeCustomer = isNewStripeCustomer ?
-					stripe.customer()
-						.create()
-						.source(request.stripeToken)
-						.email(consumerInformation.getContactEmail())
-						.metadata("bookstuf.id", consumerInformation.getGitkitUserId())
-						.idempotencyKey(customerCreateIdemKey)
-						.get() :
-							
-					stripe.customer()
-						.retrieve(consumerInformationResult.now().getStripeCustomerId())
-						.idempotencyKey(customerRetrieveIdemKey)
-						.get();
-						
-				// save new customer id to the datastore
-				if (isNewStripeCustomer) {
-					consumerInformation.setStripeCustomerId(stripeCustomer.getId());
-
-					ofy().save().entity(consumerInformation);
-				} 
-				
-				final boolean addNewCardToExistingAccount =
-					!isNewStripeCustomer && 
-					request.addNewCard && 
-					stripeCustomer.getSources().getTotalCount() < 10;
-				
-				final Card card = 
-					 addNewCardToExistingAccount ? 
-						stripe.card()
-							.create(stripeCustomer, request.stripeToken)
-							.idempotencyKey(cardAddIdemKey)
-							.get() : 
-						
-						getCard(stripeCustomer, 
-							isNewStripeCustomer ? 
-								stripeCustomer.getDefaultSource() : 
-								request.cardId);
-
-				if (
-					addNewCardToExistingAccount && 
-					request.setNewCardAsDefault
-				) {
-					stripe.customer()
-						.update(stripeCustomer)
-						.defaultSource(card.getId())
-						.get();
-				}
-				
-				// set stripe billing information into the booking
-				booking.setStripeCustomerId(stripeCustomer.getId());
-				
-				
-				final int amount = 
-					serviceFuture.get().getCost().multiply(new BigDecimal(100)).intValue();
-				
-				final int stripeFee =
-					((amount * 29) / 1000) + 30;
-				
-				final int bookstufFee =
-					amount / 100;
-				
-				logger.info(String.format("amount: %d, stripe fee: %d, bookstuf fee: %d", amount, stripeFee, bookstufFee));
-
-				
-				final String professionalStripeAccountId =
-					professionalPrivateInfoResult.now().getStripeUserId();
-				
-				final Charge charge =
-					stripe.charge()
-						.create(amount, "usd")
-						.customer(booking.getStripeCustomerId())
-						.source(card.getId())
-						.destination(professionalStripeAccountId)
-						.applicationFee(stripeFee + bookstufFee)
-						.metadata("bookstuf.booking.id", booking.getId()) 
-						.idempotencyKey(chargeIdemKey)
-						.get();
-				
-				booking.setStripeChargeId(charge.getId());
-				
-				return null;	
-			} // call
-		}); // retryHelper.execute(Callable)
-	}
-	
-
-	private ListenableFuture<Void> handlePaymentMethod(
-		final Booking booking, 
-		final BookingRequest request, 
-		final SettableFuture<Service> serviceFuture
-	) {
-		final Result<ConsumerInformation> consumerInformationResult =
-			userService.getCurrentConsumerInformation();
-
-		final Key<ProfessionalPrivateInformation> professionalPrivateKey =
-			Key.create(ProfessionalPrivateInformation.class, request.professionalUserId);
-		
-		final Result<ProfessionalPrivateInformation> professionalPrivateInfo =
-			ofy().transactionless().load().key(professionalPrivateKey);
-		
-		return execService.get().submit(new Callable<Void>() {
-			@Override
-			public Void call() throws Exception {
-				final Closeable session =
-					ObjectifyService.begin();
-				
-				try {
-					if (request.paymentMethod == PaymentMethod.STRIPE_CARD) {
-						handleStripeCardPaymentMethod(
-							booking, 
-							request, 
-							consumerInformationResult, 
-							professionalPrivateInfo,
-							serviceFuture);
-						
-					} else {
-						handleCashPaymentMethod(booking);
-					}
-				} finally {
-					session.close();
-				}
-				
-				
-				return null;
-			}
-		});
-	}
-	
-	// TODO: consolidate error reporting format
-	// TODO: need to create handlers for all individual StripeException subclasses
-	
-	
-	// TODO: send confirmation email to professional
-	// TODO: send confirmation email to consumer
-	
-	// TODO: need to implement card deletion flow
-	@Publish
-	private String book(
-		@RequestBody final BookingRequest request
-	) throws 
-		Exception 
-	{	
-		final Booking requestedBooking =
-			new Booking();
-		
-		requestedBooking.setId(UUID.randomUUID().toString());
-		
-		/*
-		// payment can be handled in parallel.  it could take a long time for
-		// roundtrips to both datastore and stripe's servers if needed.
-		final ListenableFuture<Void> paymentMethodStatus =
-			handlePaymentMethod(requestedBooking, request, serviceFuture);
-		*/
-		final PaymentSystem paymentSystem =
-			getPaymentSystem(request.paymentMethod);
-		
-		paymentSystem.prepare();
-		
 		// need to prepare as much information outside of transaction as 
 		// possible to ensure transaction can execute as fast as possible
 		final String consumerUserId =
@@ -302,194 +114,153 @@ public class BookingServlet extends RpcServlet {
 		final Key<ProfessionalInformation> professionalKey = 
 			Key.create(ProfessionalInformation.class, request.professionalUserId);
 
+
+		final Booking requestedBooking =
+			new Booking();
 		
 		// fill in booking information
+		requestedBooking.setId(UUID.randomUUID().toString());
 		requestedBooking.setProfessional(professionalKey);
 		requestedBooking.setConsumer(consumerKey);
 		requestedBooking.setStartTime(request.startTime);
 		
-		
-		return retryHelper.transactNew(10000, new Callable<String>() {
-			@Override
-			public String call() throws Exception {
-				try {
-					// initiate fetch for daily agendas
-					final Result<DailyAgenda> professionalDailyAgendaResult =
-						getProfessionalDailyAgenda(request.professionalUserId, request.date);
-					
-					final Result<ConsumerDailyAgenda> consumerDailyAgendaResult =
-						getConsumerDailyAgenda(consumerKey, consumerUserId, request.date);
-	
-					final LoadResult<ProfessionalInformation> professionalInfoResult =
-						ofy().load().key(professionalKey);
-	
-	
-					// wait for the daily agendas to be ready
-					final DailyAgenda professionalDailyAgenda =
-						professionalDailyAgendaResult.now();
-					
-					final ConsumerDailyAgenda consumerDailyAgenda =
-						consumerDailyAgendaResult.now();
-					
-					final ProfessionalInformation professionalInfo = 
-						professionalInfoResult.safe();
-					
-					final LinkedList<Availability> availability =
-						professionalInfo.getAvailability();
-	
-					final Service service =
-						professionalInfo.getService(request.serviceId);
-					
-					requestedBooking.setService(service);
-									
-					// see if we can make the booking...
-					// FIXME: need to see if the booking has already been made for this customer!
-					//        datastore transactions must be idempotent
-					if (
-						isAvailable(request.date.getDayOfWeek(), availability, requestedBooking) &&
-						professionalDailyAgenda.canAdd(requestedBooking) &&
-						consumerDailyAgenda.canAdd(requestedBooking)				
-					) {
-						if (paymentSystem.isPaymentLikely()) {
-							// FIXME: need to handle case where we can't access stripe and we are
-							//        not sure if the charge went through or not, but we fail the booking
-							//        anyways
-							//
-							//        need to send email to luke and put task in task queue to search for 
-							//        a charge and refund it if found
-							paymentSystem.execute(service.getCost());
-							
-							// ...make it if we can...
-							professionalDailyAgenda.add(requestedBooking);
-							consumerDailyAgenda.add(requestedBooking);
-							
-							// save daily agendas back to the datastore
-							ofy().save().entity(professionalDailyAgenda);
-							ofy().save().entity(consumerDailyAgenda);
-							
-							paymentSystem.throwErrorIfPresent();
-							
-							// FIXME: also need to handle the case where the stripe charge may have gone through
-							//        but we exhaust our transaction retries attempting to commit the transaction
-						} else {
-							throw new RequestError("Unable to setup account for payment.");
-						}
-					} else {
-						throw new RequestError("That time slot is not available.");
-					}
-				} catch (final Throwable throwable) {
-					final Throwable t =
-						getRealCause(throwable);
-					
-					if (t instanceof CardException) {
-						throw new RequestError(t.getMessage());
-						
-					} else if (t instanceof RequestError) {
-						throw (RequestError) t;
-						
-					} else {
-						throw new RequestError("An internal error occured, try again later.");
-					}
-					
-				}
-				
-				return "{\"success\": true}";
-			}
-		});
+		return requestedBooking;
 	}
+	
 
-	private boolean isAvailable(
-		final DayOfWeek dayOfWeek,
-		final LinkedList<Availability> availability,
-		final Booking requestedBooking
-	) {
-		for (final Availability a : availability) {
-			if (a.getDayOfTheWeek() == dayOfWeek) {
-				
-				final LocalTime availStartTime =
-					LocalTime.of(a.getStartHour(), a.getStartMinute());
-				
-				final LocalTime availEndTime =
-					LocalTime.of(a.getEndHour(), a.getEndMinute());
-				
-				final LocalTime bookingStartTime = 
-					requestedBooking.getStartTime();
-				
-				final LocalTime bookingEndTime =
-					bookingStartTime.plus(requestedBooking.getService().getDuration());
-				
-				if (
-					(
-						bookingStartTime.equals(availStartTime) ||
-						bookingStartTime.isAfter(availStartTime)
-					) && (
-						bookingEndTime.equals(availEndTime) ||
-						bookingEndTime.isBefore(availEndTime)
-					)
-				) {
-					return true;
-				}
-			}
-		}
-		
-		return false;
-	}
-
-	private Card getCard(
-		final Customer stripeCustomer, 
-		final String cardId
+	
+	// TODO: need to implement card deletion flow
+	@Publish
+	private String book(
+		@RequestBody final BookingRequest request
 	) throws 
-		StripeException 
-	{
-		for (final ExternalAccount card : stripeCustomer.getSources().getData()) {
-			if (card.getId().equals(cardId)) {
-				return (Card) card;
+		Exception 
+	{	
+		final Booking booking =
+			createBooking(request);
+
+		final PaymentStrategy paymentStrategy =
+			getPaymentStrategy(request, booking);
+		
+		paymentStrategy.prepare();
+		
+		final BookingStrategy bookingStrategy =
+			getBookingStrategy(request, booking);
+		
+
+		try {
+			retryHelper.transactNew(10000, new Callable<Void>() {
+				@Override
+				public Void call() throws Exception {
+						bookingStrategy.prepare();
+						
+						if (bookingStrategy.isBookingPossible()) {
+							if (paymentStrategy.isPaymentLikely()) {
+								final Service service =
+									booking.getService();
+								
+								paymentStrategy.execute(service.getCost());
+								
+								bookingStrategy.execute();
+								
+								throw new IOException("TESTING EXCEPTION CASES!");
+							} else {
+								throw new RequestError("Unable to setup account for payment.");
+							}
+						} else {
+							throw new RequestError("That time slot is not available.");
+						}
+					
+					
+					//return null;
+				}
+			});
+		} catch (final Throwable throwable) {
+			final Throwable t =
+				getRealCause(throwable);
+			
+			if (t instanceof CardException) {
+				throw new RequestError(t.getMessage());
+				
+			} else if (
+				// payment may or may not have happened
+				t instanceof IOException ||
+				t instanceof SocketTimeoutException ||
+				t instanceof ResponseTooLargeException ||
+				
+				// datastore transaction may or may not have happened
+				t instanceof DatastoreTimeoutException ||
+				t instanceof DatastoreFailureException ||
+				
+				// datastore transaction did not happen
+				t instanceof ConcurrentModificationException
+			) {	
+				paymentStrategy.rollbackPayment();
+				throw new RequestError("An internal error occured, try again later.");
+				
+			} else if (t instanceof RequestError) {
+				throw (RequestError) t;
+				
+			} else {
+				throw new RequestError("An internal error occured, try again later.");
 			}
 		}
 		
-		// didn't already have the card, need to fetch it
-		final Card defaultCard =
-			stripe.card().retrieve(stripeCustomer, cardId).get();
+		sendConfirmationToConsumer(request, booking);
 		
-		return defaultCard;
-	}
-	
-	private boolean cardWillBeExpired(
-		final Card card,
-		final LocalDate date
-	) {
-		return 
-			card.getExpYear().intValue() < date.getYear() ||
-			(
-				card.getExpYear().intValue() == date.getYear() &&
-				card.getExpMonth().intValue() < date.getMonthValue()
-			);
+		return "{\"success\": true}";
 	}
 
-	private Result<DailyAgenda> getProfessionalDailyAgenda(
-		final String professionalUserId, 
-		final LocalDate date
-	) {
-		final Key<DailyAgenda> key =
-			DailyAgenda.createKey(professionalUserId, date);
 
-		return new Result<DailyAgenda>() {
-			@Override
-			public DailyAgenda now() {
-				try {
-					return ofy().load().key(key).safe();
-					
-				} catch (final NotFoundException e) {
-					final DailyAgenda dailyAgenda =
-						new DailyAgenda();
-					
-					dailyAgenda.setOwnerAndDate(professionalUserId, date);
-					
-					return dailyAgenda;
-				}
-			}		
-		};
+	// TODO: need more information here and copy from Lena
+	private void sendConfirmationToConsumer(
+		final BookingRequest request, 
+		final Booking booking
+	) {
+		Properties props = new Properties();
+		Session session = Session.getDefaultInstance(props, null);
+
+		final ConsumerInformation userInformation = 
+			userService.getCurrentConsumerInformation().now();
+		
+		final String emailAddress =
+			userInformation.getContactEmail();
+		
+		try {
+		    final Message msg = 
+		    	new MimeMessage(session);
+		    
+		    msg.setFrom(new InternetAddress("noreply@bookstuf.com", "Bookstuf Service"));
+		    msg.addRecipient(Message.RecipientType.TO, new InternetAddress(emailAddress));
+		    msg.setSubject("Booking confirmation for " + request.date);
+		    msg.setText("Your booking has been successfully placed.");
+		    
+		    Transport.send(msg);
+
+		} catch (final Exception e) {
+		    logger.log(Level.WARNING, "unable to send booking confirmation", e);
+		}
 	}
+
+	private BookingStrategy getBookingStrategy(
+		final BookingRequest request,
+		final Booking booking
+	) {
+		return new SingleBookingStrategy(request, booking);
+	}
+
+	private PaymentStrategy getPaymentStrategy(
+		final BookingRequest request,
+		final Booking booking
+	) {
+		if (request.paymentMethod == PaymentMethod.STRIPE_CARD) {
+			return new StripePaymentStrategy(request, booking, userService, execService.get(), stripe, retryHelper);
+			
+		} else {
+			return new CashPaymentStrategy(request, booking, userService, execService.get(), stripe, retryHelper);
+		}
+	}
+
 
 	private List<Key<DailyAgenda>> getProfessionalDailyAgenda(
 		final String professionalUserId, 
@@ -533,31 +304,6 @@ public class BookingServlet extends RpcServlet {
 		return keys;
 	}
 
-	private Result<ConsumerDailyAgenda> getConsumerDailyAgenda(
-		final Key<ConsumerInformation> consumerKey, 
-		final String consumerUserId, 
-		final LocalDate date
-	) {
-		final Key<ConsumerDailyAgenda> key =
-			ConsumerDailyAgenda.createKey(consumerKey, consumerUserId, date);
-		
-		return new Result<ConsumerDailyAgenda>() {
-			@Override
-			public ConsumerDailyAgenda now() {
-				try {
-					return ofy().load().key(key).safe();
-					
-				} catch (final NotFoundException e) {
-					final ConsumerDailyAgenda dailyAgenda =
-						new ConsumerDailyAgenda();
-					
-					dailyAgenda.setOwnerAndDate(consumerUserId, date);
-					
-					return dailyAgenda;
-				}
-			}	
-		};
-	}
 
 
 	

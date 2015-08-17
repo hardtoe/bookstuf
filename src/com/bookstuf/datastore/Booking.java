@@ -35,6 +35,7 @@ public class Booking implements Serializable {
 		int result = 1;
 		result = prime * result
 				+ ((consumer == null) ? 0 : consumer.hashCode());
+		result = prime * result + ((id == null) ? 0 : id.hashCode());
 		result = prime * result
 				+ ((paymentMethod == null) ? 0 : paymentMethod.hashCode());
 		result = prime * result
@@ -42,6 +43,8 @@ public class Booking implements Serializable {
 		result = prime * result + ((service == null) ? 0 : service.hashCode());
 		result = prime * result
 				+ ((startTime == null) ? 0 : startTime.hashCode());
+		result = prime * result
+				+ ((stripeChargeId == null) ? 0 : stripeChargeId.hashCode());
 		result = prime
 				* result
 				+ ((stripeCustomerId == null) ? 0 : stripeCustomerId.hashCode());
@@ -53,54 +56,50 @@ public class Booking implements Serializable {
 	 */
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj) {
+		if (this == obj)
 			return true;
-		}
-		if (obj == null) {
+		if (obj == null)
 			return false;
-		}
-		if (!(obj instanceof Booking)) {
+		if (!(obj instanceof Booking))
 			return false;
-		}
 		Booking other = (Booking) obj;
 		if (consumer == null) {
-			if (other.consumer != null) {
+			if (other.consumer != null)
 				return false;
-			}
-		} else if (!consumer.equals(other.consumer)) {
+		} else if (!consumer.equals(other.consumer))
 			return false;
-		}
-		if (paymentMethod != other.paymentMethod) {
+		if (id == null) {
+			if (other.id != null)
+				return false;
+		} else if (!id.equals(other.id))
 			return false;
-		}
+		if (paymentMethod != other.paymentMethod)
+			return false;
 		if (professional == null) {
-			if (other.professional != null) {
+			if (other.professional != null)
 				return false;
-			}
-		} else if (!professional.equals(other.professional)) {
+		} else if (!professional.equals(other.professional))
 			return false;
-		}
 		if (service == null) {
-			if (other.service != null) {
+			if (other.service != null)
 				return false;
-			}
-		} else if (!service.equals(other.service)) {
+		} else if (!service.equals(other.service))
 			return false;
-		}
 		if (startTime == null) {
-			if (other.startTime != null) {
+			if (other.startTime != null)
 				return false;
-			}
-		} else if (!startTime.equals(other.startTime)) {
+		} else if (!startTime.equals(other.startTime))
 			return false;
-		}
+		if (stripeChargeId == null) {
+			if (other.stripeChargeId != null)
+				return false;
+		} else if (!stripeChargeId.equals(other.stripeChargeId))
+			return false;
 		if (stripeCustomerId == null) {
-			if (other.stripeCustomerId != null) {
+			if (other.stripeCustomerId != null)
 				return false;
-			}
-		} else if (!stripeCustomerId.equals(other.stripeCustomerId)) {
+		} else if (!stripeCustomerId.equals(other.stripeCustomerId))
 			return false;
-		}
 		return true;
 	}
 
@@ -192,6 +191,10 @@ public class Booking implements Serializable {
 
 	public void setStripeChargeId(final String id) {
 		this.stripeChargeId = id;
+	}
+	
+	public String getStripeChargeId() {
+		return this.stripeChargeId;
 	}
 	
 	public String getId() {

@@ -112,6 +112,7 @@
 		
 		
 			var calendarTemplate;
+			var cardTemplate;
 
 			var height = 50;
 			
@@ -346,7 +347,7 @@
 				$('#cc-exp').payment('formatCardExpiry');
 				$('#cc-cvc').payment('formatCardCVC');
 				
-				var cardTemplate = 
+				cardTemplate = 
 					Hogan.compile($('#card-template').html());
 				
 				loadCards();

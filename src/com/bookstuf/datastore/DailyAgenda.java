@@ -79,15 +79,15 @@ public class DailyAgenda {
 	}
 	
 	public boolean canAdd(final Booking newBooking) {		
-		// special case, booking is exactly the same, return true
-		// this behavior is needed to make booking transactions 
-		// idempotent in the datastore and safe to retry
+		// special case, booking is the same id, need to
+		// return so we can preserve idempotent semantics
+		// for booking transaction
 		final Booking sameBooking =
 			bookings.get(newBooking.getStartTime());
 		
 		if (
 			sameBooking != null && 
-			sameBooking.equals(newBooking)
+			sameBooking.getId().equals(newBooking.getId())
 		) {
 			return true;
 		}

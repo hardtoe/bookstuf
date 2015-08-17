@@ -3,4 +3,8 @@
     <name>mapreduce-workers</name>
     <rate>30/s</rate>
   </queue>
+  <queue>
+    <name>booking-cleanup</name>
+    <rate>30/s</rate>
+  </queue>
 </queue-entries>
