@@ -162,17 +162,15 @@ public class BookingServlet extends RpcServlet {
 								paymentStrategy.execute(service.getCost());
 								
 								bookingStrategy.execute();
-								
-								throw new IOException("TESTING EXCEPTION CASES!");
+
 							} else {
 								throw new RequestError("Unable to setup account for payment.");
 							}
 						} else {
 							throw new RequestError("That time slot is not available.");
-						}
+						}		
 					
-					
-					//return null;
+					return null;
 				}
 			});
 		} catch (final Throwable throwable) {
@@ -196,6 +194,8 @@ public class BookingServlet extends RpcServlet {
 				t instanceof ConcurrentModificationException
 			) {	
 				paymentStrategy.rollbackPayment();
+				bookingStrategy.rollbackBooking();
+				
 				throw new RequestError("An internal error occured, try again later.");
 				
 			} else if (t instanceof RequestError) {

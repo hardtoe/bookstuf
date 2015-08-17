@@ -44,6 +44,6 @@ class BookstufServletModule extends ServletModule {
 		
 		serve("/_ah/warmup").with(WarmupServlet.class);
 		
-		serve("/*").with(ServicesPageServlet.class);
+		serveRegex("/[^/]+").with(ServicesPageServlet.class);
 	}
 }

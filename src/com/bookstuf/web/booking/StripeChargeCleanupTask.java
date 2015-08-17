@@ -28,6 +28,10 @@ public class StripeChargeCleanupTask implements DeferredTask {
 	
 	private Booking booking;
 
+	public StripeChargeCleanupTask() {
+		// needed for serialization?
+	}
+	
 	public StripeChargeCleanupTask(final Booking booking) {
 		this.booking = booking;
 	}
