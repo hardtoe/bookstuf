@@ -51,8 +51,10 @@ public class ServicesPageServlet extends HttpServlet {
 	) throws 
 		IOException 
 	{
+		logger.info("getServletPath(): " + req.getServletPath());
+		
 		final String handle =
-			req.getPathInfo().substring(1);
+			req.getServletPath().substring(1);
 		
 		final ProfessionalInformation userInformation =
 			userService.get().getProfessionalInformationByHandle(handle);

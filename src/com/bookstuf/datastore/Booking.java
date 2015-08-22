@@ -6,7 +6,6 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
 import org.threeten.bp.LocalTime;
-import org.threeten.bp.ZonedDateTime;
 
 import com.bookstuf.PublicReadOnly;
 import com.googlecode.objectify.Key;
@@ -25,6 +24,8 @@ public class Booking implements Serializable {
 	PaymentMethod paymentMethod;
 	String stripeCustomerId;
 	String stripeChargeId;
+	
+	PaymentStatus paymentStatus;
 	
 	/* (non-Javadoc)
 	 * @see java.lang.Object#hashCode()
@@ -119,6 +120,8 @@ public class Booking implements Serializable {
 		out.writeObject(paymentMethod);
 		out.writeObject(stripeCustomerId);
 		out.writeObject(stripeChargeId);
+		
+		out.writeObject(paymentStatus);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -139,6 +142,8 @@ public class Booking implements Serializable {
 		paymentMethod = (PaymentMethod) in.readObject();
 		stripeCustomerId = (String) in.readObject();
 		stripeChargeId = (String) in.readObject();
+		
+		paymentStatus = (PaymentStatus) in.readObject();
 	}
 
 	public Key<ProfessionalInformation> getProfessional() {
@@ -204,4 +209,20 @@ public class Booking implements Serializable {
 	public void setId(final String id) {
 		this.id = id;
 	}
+
+	/**
+	 * @return the paymentStatus
+	 */
+	public PaymentStatus getPaymentStatus() {
+		return paymentStatus;
+	}
+
+	/**
+	 * @param paymentStatus the paymentStatus to set
+	 */
+	public void setPaymentStatus(PaymentStatus paymentStatus) {
+		this.paymentStatus = paymentStatus;
+	}
+	
+	
 }

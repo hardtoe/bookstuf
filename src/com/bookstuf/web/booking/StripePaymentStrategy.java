@@ -278,7 +278,7 @@ public class StripePaymentStrategy extends PaymentStrategy {
 	}
 	
 	private void sendAdminEmail(final Throwable t) {
-		Luke.sendEmail(
+		Luke.email(
 			"charge cleanup failure for booking id " + booking.getId(), 
 			
 			"Could not enqueue stripe charge cleanup for booking id " + booking.getId() + ".  \n" +

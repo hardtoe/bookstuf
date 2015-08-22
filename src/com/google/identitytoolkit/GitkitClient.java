@@ -16,6 +16,7 @@
 
 package com.google.identitytoolkit;
 
+import com.bookstuf.Luke;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -126,9 +127,10 @@ public class GitkitClient {
 		  try {
 			  return tokenHelper.verifyAndDeserialize(token).getPayloadAsJsonObject();
 
-		  } catch (SignatureException e) {
+		  } catch (Exception e) {
 			  if (retry < 0) {
 				  logger.log(Level.SEVERE, "Could not validate gitkit token after 10 tries!", e);
+				  Luke.email("gitkit verification exception", "could not validate gitkit token after 10 tries", e);
 				  throw new GitkitClientException(e);
 				  
 			  } else {

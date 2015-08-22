@@ -257,7 +257,7 @@ public abstract class RpcServlet extends HttpServlet {
 		final String message
 	) throws IOException {
 		response.getWriter().print("{\"success\": false, \"error\" : \"" + message + "\"}");
-		response.setStatus(400);
+		response.setStatus(500);
 	}
 	
 	protected Throwable getRealCause(final Throwable t) {

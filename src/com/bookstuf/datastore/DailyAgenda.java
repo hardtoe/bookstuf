@@ -143,7 +143,7 @@ public class DailyAgenda {
 		return bookings;
 	}
 
-	public boolean removeBooking(String id) {
+	public boolean removeBooking(final String id) {
 		final Iterator<Entry<LocalTime, Booking>> i = 
 			bookings.entrySet().iterator();
 		
@@ -158,5 +158,21 @@ public class DailyAgenda {
 		}
 		
 		return false;
+	}
+
+	public Booking getBooking(final String id) {
+		final Iterator<Entry<LocalTime, Booking>> i = 
+			bookings.entrySet().iterator();
+		
+		while (i.hasNext()) {
+			final Booking booking =
+				i.next().getValue();
+			
+			if (booking.getId().equals(id)) {
+				return booking;
+			}
+		}
+		
+		return null;
 	}
 }

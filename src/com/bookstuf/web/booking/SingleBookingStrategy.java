@@ -37,7 +37,8 @@ public class SingleBookingStrategy extends BookingStrategy {
 	private final Booking booking;
 	private final RetryHelper retryHelper;
 	
-	private DailyAgenda professionalDailyAgenda;
+	private DailyAgenda professionalDailyAgendaOne;
+	private DailyAgenda professionalDailyAgendaTwo;
 	private ConsumerDailyAgenda consumerDailyAgenda;
 	private ProfessionalInformation professionalInfo;
 	private LinkedList<Availability> availability;
@@ -55,8 +56,11 @@ public class SingleBookingStrategy extends BookingStrategy {
 	@Override
 	public void prepare() {
 		// initiate fetch for daily agendas
-		final Result<DailyAgenda> professionalDailyAgendaResult =
+		final Result<DailyAgenda> professionalDailyAgendaResultOne =
 			getProfessionalDailyAgenda(request.professionalUserId, request.date);
+		
+		final Result<ConsumerDailyAgenda> professionalDailyAgendaResultTwo =
+			getConsumerDailyAgenda(Key.create(ConsumerInformation.class, request.professionalUserId), request.date);
 		
 		final Result<ConsumerDailyAgenda> consumerDailyAgendaResult =
 			getConsumerDailyAgenda(booking.getConsumer(), request.date);
@@ -66,8 +70,11 @@ public class SingleBookingStrategy extends BookingStrategy {
 
 
 		// wait for the daily agendas to be ready
-		professionalDailyAgenda =
-			professionalDailyAgendaResult.now();
+		professionalDailyAgendaOne =
+			professionalDailyAgendaResultOne.now();
+		
+		professionalDailyAgendaTwo =
+			professionalDailyAgendaResultTwo.now();
 		
 		consumerDailyAgenda =
 			consumerDailyAgendaResult.now();
@@ -88,18 +95,19 @@ public class SingleBookingStrategy extends BookingStrategy {
 	public boolean isBookingPossible() {
 		return 						
 			isAvailable(request.date.getDayOfWeek(), availability, booking) &&
-			professionalDailyAgenda.canAdd(booking) &&
+			professionalDailyAgendaOne.canAdd(booking) &&
+			professionalDailyAgendaTwo.canAdd(booking) &&
 			consumerDailyAgenda.canAdd(booking);
 	}
 
 	@Override
 	public void execute() {
 		// ...make it if we can...
-		professionalDailyAgenda.add(booking);
+		professionalDailyAgendaOne.add(booking);
 		consumerDailyAgenda.add(booking);
 		
 		// save daily agendas back to the datastore
-		ofy().save().entity(professionalDailyAgenda);
+		ofy().save().entity(professionalDailyAgendaOne);
 		ofy().save().entity(consumerDailyAgenda);
 	}
 
@@ -227,8 +235,13 @@ public class SingleBookingStrategy extends BookingStrategy {
 		}
 	}
 	
+	@Override
+	public ProfessionalInformation getProfessionalInformation() {
+		return this.professionalInfo;
+	}
+	
 	private void sendAdminEmail(final Throwable t) {
-		Luke.sendEmail(
+		Luke.email(
 			"booking cleanup failure for booking id " + booking.getId(), 
 			
 			"Could not enqueue booking cleanup for booking id " + booking.getId() + ".  \n" +

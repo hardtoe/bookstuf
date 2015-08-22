@@ -32,6 +32,7 @@ import org.threeten.bp.LocalTime;
 
 import static com.googlecode.objectify.ObjectifyService.ofy;
 
+import com.bookstuf.Luke;
 import com.bookstuf.appengine.NotLoggedInException;
 import com.bookstuf.appengine.RetryHelper;
 import com.bookstuf.appengine.StripeApi;
@@ -42,8 +43,11 @@ import com.bookstuf.datastore.ConsumerInformation;
 import com.bookstuf.datastore.ConsumerDailyAgenda;
 import com.bookstuf.datastore.DailyAgenda;
 import com.bookstuf.datastore.PaymentMethod;
+import com.bookstuf.datastore.PaymentStatus;
 import com.bookstuf.datastore.ProfessionalInformation;
 import com.bookstuf.datastore.Service;
+import com.bookstuf.mail.Mail;
+import com.bookstuf.web.AsTransaction;
 import com.bookstuf.web.Default;
 import com.bookstuf.web.ExceptionHandler;
 import com.bookstuf.web.Param;
@@ -64,8 +68,10 @@ import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.googlecode.objectify.Key;
 import com.googlecode.objectify.LoadResult;
+import com.googlecode.objectify.Result;
 import com.stripe.exception.CardException;
 import com.stripe.exception.StripeException;
+import com.stripe.model.Charge;
 
 @Singleton
 @SuppressWarnings("serial")
@@ -167,7 +173,7 @@ public class BookingServlet extends RpcServlet {
 								throw new RequestError("Unable to setup account for payment.");
 							}
 						} else {
-							throw new RequestError("That time slot is not available.");
+							throw new RequestError("Someone reserved that slot just before you did.");
 						}		
 					
 					return null;
@@ -202,24 +208,33 @@ public class BookingServlet extends RpcServlet {
 				throw (RequestError) t;
 				
 			} else {
+				final ProfessionalInformation pro = 
+					bookingStrategy.getProfessionalInformation();
+				
+				Luke.email(
+					"booking exception", 
+					
+					"unknown internal error received while trying to complete a booking.\n" +
+					"User: " + gitkitUser.get().getName() + " (" + gitkitUser.get().getEmail() + ")\n" +
+					"Pro:  " + request.professionalUserId + ", " + (pro == null ? "null" : pro.getFirstName() + " " + pro.getLastName()), 
+					
+					t);
+				
 				throw new RequestError("An internal error occured, try again later.");
 			}
 		}
 		
-		sendConfirmationToConsumer(request, booking);
+		sendConfirmationEmailToConsumer(request, booking);
 		
 		return "{\"success\": true}";
 	}
 
 
 	// TODO: need more information here and copy from Lena
-	private void sendConfirmationToConsumer(
+	private void sendConfirmationEmailToConsumer(
 		final BookingRequest request, 
 		final Booking booking
 	) {
-		Properties props = new Properties();
-		Session session = Session.getDefaultInstance(props, null);
-
 		final ConsumerInformation userInformation = 
 			userService.getCurrentConsumerInformation().now();
 		
@@ -227,15 +242,14 @@ public class BookingServlet extends RpcServlet {
 			userInformation.getContactEmail();
 		
 		try {
-		    final Message msg = 
-		    	new MimeMessage(session);
-		    
-		    msg.setFrom(new InternetAddress("noreply@bookstuf.com", "bookstuf.com"));
-		    msg.addRecipient(Message.RecipientType.TO, new InternetAddress(emailAddress));
-		    msg.setSubject("Booking confirmation for " + request.date);
-		    msg.setText("Your booking has been successfully placed.");
-		    
-		    Transport.send(msg);
+			Mail.mail(
+				"noreply@bookstuf.com", "bookstuf.com", 
+				
+				emailAddress, emailAddress, 
+				
+				"Booking confirmation for " + request.date, 
+				
+				"Your booking has been successfully placed.");
 
 		} catch (final Exception e) {
 		    logger.log(Level.WARNING, "unable to send booking confirmation", e);
@@ -304,8 +318,218 @@ public class BookingServlet extends RpcServlet {
 		return keys;
 	}
 
+	public static class BookingModificationRequest {
+		public String professionalId;
+		public String consumerId;
+		public LocalDate date;
+		public String bookingId;
+		public String reason;
+	}
+	
+	// the professional or the consumer can cancel
+	@Publish(withAutoRetryMillis = 30000) @AsTransaction
+	private String cancel(
+		@RequestBody BookingModificationRequest request
+	) {
+		final String userId =
+			gitkitUser.get().getLocalId();
+		
+		if (
+			userId.equals(request.professionalId) ||
+			userId.equals(request.consumerId)
+		) {
+			return null;
+			
+		} else {
+			throw new RequestError("Current user ID does not match professional ID of booking.");
+		}
+	}
+	
+	// only the professional can refund
+	@Publish
+	private String refund(
+		@RequestBody final BookingModificationRequest request
+	) throws 
+		Exception 
+	{
+		final String stripeRefundNonce = 
+			UUID.randomUUID().toString();
+		
+		if (gitkitUser.get().getLocalId().equals(request.professionalId)) {
+				try {
+				retryHelper.transactNew(10000, new Callable<Boolean>() {
+					@Override
+					public Boolean call() throws Exception {
+						// fetch agendas with the booking
+						final Result<DailyAgenda> professionalDailyAgendaResult =
+							ofy().load().key(DailyAgenda.createProfessionalKey(request.professionalId, request.date));
+						
+						final LoadResult<ConsumerDailyAgenda> consumerDailyAgendaResult =
+							ofy().load().key(ConsumerDailyAgenda.createConsumerKey(request.consumerId, request.date));
 
 
+						// wait for the daily agendas to be ready
+						final DailyAgenda professionalDailyAgenda = 
+							professionalDailyAgendaResult.now();
+						
+						final Booking booking =
+							professionalDailyAgenda.getBooking(request.bookingId);
+
+						if (
+							booking.getPaymentStatus() == PaymentStatus.PAID &&
+							booking.getPaymentMethod() == PaymentMethod.STRIPE_CARD
+						) {
+							final Charge charge =
+								stripe
+									.charge()
+									.retrieve(booking.getStripeChargeId())
+									.get();
+							
+							if (
+								charge.getRefunded() && 
+								(charge.getAmountRefunded().intValue() >= charge.getAmount().intValue())
+							) {
+								// already refunded, don't refund again
+								
+							} else {
+								stripe
+									.refund()
+									.create(charge)
+									.metadata("reason", "professional issued refund")
+									.idempotencyKey(stripeRefundNonce)
+									.get();
+							}
+							
+							booking.setPaymentStatus(PaymentStatus.REFUNDED);
+							
+							final ConsumerDailyAgenda consumerDailyAgenda = 
+								consumerDailyAgendaResult.now();
+							
+							consumerDailyAgenda.removeBooking(booking.getId());
+							consumerDailyAgenda.add(booking);
+							
+							ofy().save().entities(professionalDailyAgenda);
+							ofy().save().entities(consumerDailyAgenda);	
+							
+							return true;
+							
+						} else {
+							return false;
+						}
+					}
+				});
+			} catch (final Exception e) {
+				throw new RequestError("Unable to complete request, try again later");
+			}
+			
+			try {
+				retryHelper.execute(5000, new Callable<Void>() {
+					@Override
+					public Void call() throws Exception {
+						final ConsumerInformation consumerInformation =
+							ofy().load().key(Key.create(ConsumerInformation.class, request.consumerId)).now();
+
+						Mail.mail(
+							"noreply@bookstuf.com", "bookstuf.com", 
+							
+							consumerInformation.getContactEmail(), consumerInformation.getContactEmail(), 
+							
+							"Your booking on " + request.date + " has been refunded", 
+							
+							"Your booking on " + request.date + " has been refunded");
+						
+						return null;
+					}
+				});
+				
+			} catch (final Exception e) {
+				Luke.email("unable to send refund email", "", e);
+				logger.log(Level.SEVERE, "Unable to send refund email", e);
+			}
+				
+			return "{\"success\": true}";
+			
+		} else {
+			throw new RequestError("Current user ID does not match professional ID of booking.");
+		}
+	}
+
+	@Publish 
+	private List<PublicDailyAvailability> agenda() {
+		// consumer agendas
+		final String userId =
+			gitkitUser.get().getLocalId();
+		
+		final LocalDate startDate =
+			LocalDate.now();
+		
+		final int NUM_DAYS = 7;
+		
+		// initiate fetch for daily agendas
+		final List<Key<DailyAgenda>> dailyAgendaKeysOne =
+			getProfessionalDailyAgenda(userId, startDate, NUM_DAYS);
+
+		final Map<Key<DailyAgenda>, DailyAgenda> dailyAgendaResultOne =
+			ofy().load().keys(dailyAgendaKeysOne);
+
+		final List<Key<ConsumerDailyAgenda>> dailyAgendaKeysTwo =
+			getConsumerDailyAgenda(userId, startDate, NUM_DAYS);
+
+		final Map<Key<ConsumerDailyAgenda>, ConsumerDailyAgenda> dailyAgendaResultTwo =
+			ofy().load().keys(dailyAgendaKeysTwo);	
+		
+		
+		
+		
+		final ArrayList<PublicDailyAvailability> result =
+			new ArrayList<>();
+
+		final Iterator<Key<DailyAgenda>> agendaIteratorOne =
+			dailyAgendaKeysOne.iterator();
+
+		final Iterator<Key<ConsumerDailyAgenda>> agendaIteratorTwo =
+			dailyAgendaKeysTwo.iterator();
+		
+		int index = 0;
+		
+		while (
+			agendaIteratorOne.hasNext() &&
+			agendaIteratorTwo.hasNext()
+		) {
+			final LocalDate date = 
+				startDate.plusDays(index);
+			
+			final TreeMap<LocalTime, Booking> userBookings = 
+				bookings(dailyAgendaResultOne.get(agendaIteratorOne.next()));
+			
+			if (
+				userBookings != null && 
+				dailyAgendaResultTwo != null
+			) {
+				final TreeMap<LocalTime, Booking> bookings = 
+					bookings(dailyAgendaResultTwo.get(agendaIteratorTwo.next()));
+				
+				if (bookings != null) {
+					userBookings.putAll(bookings);
+				}
+			}
+			
+			final PublicDailyAvailability publicDailyAvailability =
+				new PublicDailyAvailability(
+					index,
+					date, 
+					userBookings, 
+					null,
+					null);
+			
+			result.add(publicDailyAvailability);
+			
+			index++;
+		}
+		
+		return result;
+	}
+	
 	
 	@Publish
 	private List<PublicDailyAvailability> availability(
@@ -318,13 +542,20 @@ public class BookingServlet extends RpcServlet {
 		final int NUM_DAYS = 7;
 		
 		// initiate fetch for daily agendas
-		final List<Key<DailyAgenda>> professionalDailyAgendaKeys =
+		final List<Key<DailyAgenda>> professionalDailyAgendaKeysOne =
 			getProfessionalDailyAgenda(professionalUserId, startDate, NUM_DAYS);
 
-		final Map<Key<DailyAgenda>, DailyAgenda> professionalDailyAgendaResult =
-			ofy().load().keys(professionalDailyAgendaKeys);
+		final Map<Key<DailyAgenda>, DailyAgenda> professionalDailyAgendaResultOne =
+			ofy().load().keys(professionalDailyAgendaKeysOne);
+
+		final List<Key<ConsumerDailyAgenda>> professionalDailyAgendaKeysTwo =
+			getConsumerDailyAgenda(professionalUserId, startDate, NUM_DAYS);
+
+		final Map<Key<ConsumerDailyAgenda>, ConsumerDailyAgenda> professionalDailyAgendaResultTwo =
+			ofy().load().keys(professionalDailyAgendaKeysTwo);	
 		
 		
+		// consumer agendas
 		final String consumerUserId =
 			gitkitUser.get().getLocalId();
 
@@ -345,8 +576,11 @@ public class BookingServlet extends RpcServlet {
 		final ArrayList<PublicDailyAvailability> result =
 			new ArrayList<>();
 
-		final Iterator<Key<DailyAgenda>> professionalAgendaIterator =
-			professionalDailyAgendaKeys.iterator();
+		final Iterator<Key<DailyAgenda>> professionalAgendaIteratorOne =
+			professionalDailyAgendaKeysOne.iterator();
+
+		final Iterator<Key<ConsumerDailyAgenda>> professionalAgendaIteratorTwo =
+			professionalDailyAgendaKeysTwo.iterator();
 
 		final Iterator<Key<ConsumerDailyAgenda>> consumerAgendaIterator =
 			consumerDailyAgendaKeys.iterator();
@@ -361,7 +595,8 @@ public class BookingServlet extends RpcServlet {
 		
 		while (
 			consumerAgendaIterator.hasNext() &&
-			professionalAgendaIterator.hasNext()
+			professionalAgendaIteratorOne.hasNext() &&
+			professionalAgendaIteratorTwo.hasNext()
 		) {
 			final LocalDate date = 
 				startDate.plusDays(index);
@@ -375,7 +610,19 @@ public class BookingServlet extends RpcServlet {
 			logger.log(Level.INFO, "consumerExistingBookings[" + date + "] = " + consumerExistingBookings);
 			
 			final TreeMap<LocalTime, Booking> professionalExistingBookings = 
-				bookings(professionalDailyAgendaResult.get(professionalAgendaIterator.next()));
+				bookings(professionalDailyAgendaResultOne.get(professionalAgendaIteratorOne.next()));
+			
+			if (
+				professionalExistingBookings != null && 
+				professionalDailyAgendaResultTwo != null
+			) {
+				final TreeMap<LocalTime, Booking> bookings = 
+					bookings(professionalDailyAgendaResultTwo.get(professionalAgendaIteratorTwo.next()));
+				
+				if (bookings != null) {
+					professionalExistingBookings.putAll(bookings);
+				}
+			}
 			
 			final PublicDailyAvailability publicDailyAvailability =
 				new PublicDailyAvailability(
@@ -438,51 +685,5 @@ public class BookingServlet extends RpcServlet {
 		}
 		
 		return null;
-	}
-	
-	@ExceptionHandler(DatastoreFailureException.class) 
-	private void handleDatastoreFailureException(
-		final HttpServletResponse response
-	) throws 
-		IOException 
-	{
-		response.getWriter().println("{\"tryAgain\": true}");
-	}
-
-	@ExceptionHandler(ConcurrentModificationException.class) 
-	private void handleConcurrentModificationException(
-		final HttpServletResponse response
-	) throws 
-		IOException 
-	{
-		response.getWriter().println("{\"tryAgain\": true}");
-	}
-
-	@ExceptionHandler(StripeException.class) 
-	private void handleStripeException(
-		final HttpServletResponse response
-	) throws 
-		IOException 
-	{
-		response.getWriter().println("{\"unableToProcessCard\": true}");
-	}
-
-	@ExceptionHandler(NotLoggedInException.class) 
-	private void handleNotLoggedInException(
-		final HttpServletResponse response
-	) throws 
-		IOException 
-	{
-		response.getWriter().println("{\"notLoggedIn\": true}");
-	}
-	
-	@ExceptionHandler(GitkitClientException.class) 
-	private void handleGitkitClientException(
-		final HttpServletResponse response
-	) throws 
-		IOException 
-	{
-		logger.log(Level.SEVERE, "Could not validate gitkit user.", getCurrentException());
-		response.getWriter().println("{\"notLoggedIn\": true}");
 	}
 }

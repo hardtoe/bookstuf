@@ -28,4 +28,14 @@ public class ConsumerDailyAgenda extends DailyAgenda {
 	) {
 		return Key.create(parentKey, ConsumerDailyAgenda.class, createKeyString(parentKey.getName(), date));
 	}
+	
+	public static Key<ConsumerDailyAgenda> createConsumerKey(
+		final String consumerId,
+		final LocalDate date
+	) {
+		return 
+			Key.create(
+				Key.create(ConsumerInformation.class, consumerId), 
+				ConsumerDailyAgenda.class, createKeyString(consumerId, date));
+	}
 }
