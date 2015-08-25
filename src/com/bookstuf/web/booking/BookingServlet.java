@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.threeten.bp.DayOfWeek;
 import org.threeten.bp.LocalDate;
+import org.threeten.bp.LocalDateTime;
 import org.threeten.bp.LocalTime;
 
 import static com.googlecode.objectify.ObjectifyService.ofy;
@@ -72,6 +73,8 @@ import com.googlecode.objectify.Result;
 import com.stripe.exception.CardException;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Charge;
+import com.stripe.model.Reversal;
+import com.stripe.model.Transfer;
 
 @Singleton
 @SuppressWarnings("serial")
@@ -326,20 +329,144 @@ public class BookingServlet extends RpcServlet {
 		public String reason;
 	}
 	
+	private static class Reference<T> {
+		public T value;
+	}
+	
 	// the professional or the consumer can cancel
-	@Publish(withAutoRetryMillis = 30000) @AsTransaction
+	@Publish
 	private String cancel(
-		@RequestBody BookingModificationRequest request
+		@RequestBody final BookingModificationRequest request
 	) {
 		final String userId =
 			gitkitUser.get().getLocalId();
+		
+		final Reference<Boolean> refunded =
+			new Reference<>();
 		
 		if (
 			userId.equals(request.professionalId) ||
 			userId.equals(request.consumerId)
 		) {
-			return null;
+			final String stripeRefundNonce = 
+				UUID.randomUUID().toString();
 			
+			try {
+				refunded.value = retryHelper.transactNew(10000, new Callable<Boolean>() {
+					@Override
+					public Boolean call() throws Exception {
+						boolean refunded = false;
+						
+						// fetch agendas with the booking
+						final Result<DailyAgenda> professionalDailyAgendaResult =
+							ofy().load().key(DailyAgenda.createProfessionalKey(request.professionalId, request.date));
+						
+						final LoadResult<ConsumerDailyAgenda> consumerDailyAgendaResult =
+							ofy().load().key(ConsumerDailyAgenda.createConsumerKey(request.consumerId, request.date));
+	
+						final LoadResult<ProfessionalInformation> professionalInformationResult  =
+							ofy().load().key(Key.create(ProfessionalInformation.class, request.professionalId));
+	
+						// wait for the daily agendas to be ready
+						final DailyAgenda professionalDailyAgenda = 
+							professionalDailyAgendaResult.now();
+						
+						final Booking booking =
+							professionalDailyAgenda.getBooking(request.bookingId);
+						
+						if (
+							booking.getPaymentStatus() == PaymentStatus.PAID &&
+							booking.getPaymentMethod() == PaymentMethod.STRIPE_CARD
+						) {
+							final ProfessionalInformation professionalInformation =
+								professionalInformationResult.safe();
+							
+							final int refundHours =
+								professionalInformation.getCancellationDeadline();
+							
+							final LocalDateTime now =
+								LocalDateTime.now();
+							
+							final LocalDateTime bookingTime =
+								LocalDateTime.of(request.date, booking.getStartTime());
+							
+							final LocalDateTime refundDeadline =
+								bookingTime.minusHours(refundHours);
+							
+							if (now.isBefore(refundDeadline)) { 
+								final Charge charge =
+									stripe
+										.charge()
+										.retrieve(booking.getStripeChargeId())
+										.get();
+								
+								if (
+									charge.getRefunded() && 
+									(charge.getAmountRefunded().intValue() >= charge.getAmount().intValue())
+								) {
+									// already refunded, don't refund again
+									
+								} else {
+									stripe
+										.refund()
+										.create(charge)
+										.reverseTransfer(true)
+										.metadata("reason", "refund due to cancellation")
+										.idempotencyKey(stripeRefundNonce)
+										.get();
+								}
+
+								refunded = true;
+							}	
+						}
+						
+						final ConsumerDailyAgenda consumerDailyAgenda = 
+							consumerDailyAgendaResult.now();
+						
+						if (refunded) {
+							professionalDailyAgenda.getBooking(booking.getId()).setPaymentStatus(PaymentStatus.REFUNDED);
+							consumerDailyAgenda.getBooking(booking.getId()).setPaymentStatus(PaymentStatus.REFUNDED);
+						}
+						
+						professionalDailyAgenda.cancelBooking(booking.getId());
+						consumerDailyAgenda.cancelBooking(booking.getId());
+						
+						ofy().save().entities(professionalDailyAgenda);
+						ofy().save().entities(consumerDailyAgenda);	
+						
+						return refunded;
+					}
+				});
+			} catch (final Exception e) {
+				throw new RequestError("Unable to complete request, try again later");
+			}
+			
+			try {
+				retryHelper.execute(5000, new Callable<Void>() {
+					@Override
+					public Void call() throws Exception {
+						final ConsumerInformation consumerInformation =
+							ofy().load().key(Key.create(ConsumerInformation.class, request.consumerId)).now();
+	
+						Mail.mail(
+							"noreply@bookstuf.com", "bookstuf.com", 
+							
+							consumerInformation.getContactEmail(), consumerInformation.getContactEmail(), 
+							
+							"Your booking on " + request.date + " has been cancelled" + (refunded.value ? " and refunded" : ""), 
+							
+							"Your booking on " + request.date + " has been cancelled" + (refunded.value ? " and refunded" : ""));
+						
+						return null;
+					}
+				});
+				
+			} catch (final Exception e) {
+				Luke.email("unable to send cancellation email", "", e);
+				logger.log(Level.SEVERE, "Unable to send cancellation email", e);
+			}
+				
+			return "{\"success\": true}";			
 		} else {
 			throw new RequestError("Current user ID does not match professional ID of booking.");
 		}
@@ -356,7 +483,7 @@ public class BookingServlet extends RpcServlet {
 			UUID.randomUUID().toString();
 		
 		if (gitkitUser.get().getLocalId().equals(request.professionalId)) {
-				try {
+			try {
 				retryHelper.transactNew(10000, new Callable<Boolean>() {
 					@Override
 					public Boolean call() throws Exception {
@@ -395,6 +522,7 @@ public class BookingServlet extends RpcServlet {
 								stripe
 									.refund()
 									.create(charge)
+									.reverseTransfer(true)
 									.metadata("reason", "professional issued refund")
 									.idempotencyKey(stripeRefundNonce)
 									.get();

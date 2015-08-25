@@ -599,7 +599,7 @@ public class StripeApi extends StripeApiBase {
 			 * amount being refunded (either the entire or partial amount).
 			 */
 			public final CreateMethod reverseTransfer(
-					final String reverseTransfer) {
+					final boolean reverseTransfer) {
 				return set("reverse_transfer", reverseTransfer);
 			}
 

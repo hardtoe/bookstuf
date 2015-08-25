@@ -1,10 +1,10 @@
 package com.bookstuf.datastore;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map.Entry;
-import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.threeten.bp.LocalDate;
@@ -24,6 +24,7 @@ public class DailyAgenda {
 	@Id String ownerAndDate;
 	
 	@Serialize TreeMap<LocalTime, Booking> bookings;
+	@Serialize ArrayList<Booking> cancelledBookings;
 	
 	@Index int numBookings;
 	@Index boolean hasBookings;
@@ -32,6 +33,7 @@ public class DailyAgenda {
 	
 	public DailyAgenda() {
 		this.bookings = new TreeMap<LocalTime, Booking>();
+		this.cancelledBookings = new ArrayList<Booking>();
 	}
 	
 	public void setOwnerAndDate(
@@ -174,5 +176,14 @@ public class DailyAgenda {
 		}
 		
 		return null;
+	}
+
+	public void cancelBooking(String id) {
+		final Booking booking =
+			getBooking(id);
+		
+		removeBooking(id);
+		
+		cancelledBookings.add(booking);
 	}
 }
