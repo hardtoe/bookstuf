@@ -2,6 +2,7 @@ package com.bookstuf.web.booking;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
@@ -24,6 +25,7 @@ import javax.mail.Transport;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletResponse;
 
 import org.threeten.bp.DayOfWeek;
@@ -51,6 +53,7 @@ import com.bookstuf.mail.Mail;
 import com.bookstuf.web.AsTransaction;
 import com.bookstuf.web.Default;
 import com.bookstuf.web.ExceptionHandler;
+import com.bookstuf.web.MustacheLoader;
 import com.bookstuf.web.Param;
 import com.bookstuf.web.Publish;
 import com.bookstuf.web.RequestBody;
@@ -73,6 +76,7 @@ import com.googlecode.objectify.Result;
 import com.stripe.exception.CardException;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Charge;
+import com.stripe.model.Refund;
 import com.stripe.model.Reversal;
 import com.stripe.model.Transfer;
 
@@ -85,6 +89,7 @@ public class BookingServlet extends RpcServlet {
 	private final RetryHelper retryHelper;
 	private final StripeApi stripe;
 	private final Provider<ListeningExecutorService> execService;
+	private MustacheLoader m;
 	
 	@Inject BookingServlet(
 		final Logger logger,
@@ -100,6 +105,11 @@ public class BookingServlet extends RpcServlet {
 		this.retryHelper = retryHelper;
 		this.execService = execService;
 		this.stripe = stripe;
+	}
+	
+	@Override
+	public void init() throws ServletException {
+		this.m = new MustacheLoader(getServletContext());
 	}
 
 	@Default
@@ -226,8 +236,26 @@ public class BookingServlet extends RpcServlet {
 				throw new RequestError("An internal error occured, try again later.");
 			}
 		}
+
+		final ProfessionalInformation pro = 
+			bookingStrategy.getProfessionalInformation();
 		
-		sendConfirmationEmailToConsumer(request, booking);
+		try {
+			sendConfirmationEmailToConsumer(request, booking, pro, gitkitUser.get());
+			
+		} catch (final Exception e) {
+			
+			Luke.email(
+				"booking email confirmation exception",
+				
+				"tried to send an email for a successful booking and an exception was thrown.\n" +					
+				"User: " + gitkitUser.get().getName() + " (" + gitkitUser.get().getEmail() + ")\n" +
+				"Pro:  " + request.professionalUserId + ", " + (pro == null ? "null" : pro.getFirstName() + " " + pro.getLastName()), 
+						
+				e);
+			
+			logger.log(Level.SEVERE, "tried to send an email for a successful booking and an exception was thrown.", e);
+		}
 		
 		return "{\"success\": true}";
 	}
@@ -236,7 +264,9 @@ public class BookingServlet extends RpcServlet {
 	// TODO: need more information here and copy from Lena
 	private void sendConfirmationEmailToConsumer(
 		final BookingRequest request, 
-		final Booking booking
+		final Booking booking,
+		final ProfessionalInformation professional,
+		final GitkitUser user
 	) {
 		final ConsumerInformation userInformation = 
 			userService.getCurrentConsumerInformation().now();
@@ -245,18 +275,43 @@ public class BookingServlet extends RpcServlet {
 			userInformation.getContactEmail();
 		
 		try {
-			Mail.mail(
-				"noreply@bookstuf.com", "bookstuf.com", 
-				
-				emailAddress, emailAddress, 
-				
-				"Booking confirmation for " + request.date, 
-				
-				"Your booking has been successfully placed.");
+			Mail
+				.from("noreply@bookstuf.com", "bookstuf.com")
+				.to(emailAddress, user.getName())
+				.subject("Booking confirmation for " + request.date + " at " + request.startTime)
+				.body(m.load("ConsumerBookingConfirmation.email"))
+				.param("name", user.getName()) // FIXME: this does not always give the name
+				.param("date", request.date)
+				.param("time", request.startTime)
+				.param("service", booking.getService().getName())
+				.param("cost", toDollarString(booking.getService().getCost()))
+				.param("cash", request.paymentMethod == PaymentMethod.CASH)
+				.param("card", request.paymentMethod == PaymentMethod.STRIPE_CARD)
+			.send();
+			
+			Mail
+				.from("noreply@bookstuf.com", "bookstuf.com")
+				.to(professional.getContactEmail(), professional.getFirstName() + " " + professional.getLastName())
+				.subject("Booking confirmation for " + request.date + " at " + request.startTime)
+				.body(m.load("ProfessionalBookingConfirmation.email"))
+				.param("name", professional.getFirstName() + " " + professional.getLastName())
+				.param("clientName", user.getName())  // FIXME: this does not always give the name
+				.param("date", request.date)
+				.param("time", request.startTime)
+				.param("service", booking.getService().getName())
+				.param("cost", toDollarString(booking.getService().getCost()))
+				.param("cash", request.paymentMethod == PaymentMethod.CASH)
+				.param("card", request.paymentMethod == PaymentMethod.STRIPE_CARD)
+			.send();
 
 		} catch (final Exception e) {
 		    logger.log(Level.WARNING, "unable to send booking confirmation", e);
 		}
+	}
+
+	private String toDollarString(BigDecimal cost) {
+		BigDecimal ONE_HUNDRED = new BigDecimal(100);
+		return String.format("$%d.%02d", cost.intValue(), cost.multiply(ONE_HUNDRED).remainder(ONE_HUNDRED).intValue());
 	}
 
 	private BookingStrategy getBookingStrategy(
@@ -327,6 +382,27 @@ public class BookingServlet extends RpcServlet {
 		public LocalDate date;
 		public String bookingId;
 		public String reason;
+		
+		/* (non-Javadoc)
+		 * @see java.lang.Object#toString()
+		 */
+		@Override
+		public String toString() {
+			StringBuilder builder = new StringBuilder();
+			builder.append("BookingModificationRequest [\n    professionalId=");
+			builder.append(professionalId);
+			builder.append(", \nconsumerId=");
+			builder.append(consumerId);
+			builder.append(", \ndate=");
+			builder.append(date);
+			builder.append(", \nbookingId=");
+			builder.append(bookingId);
+			builder.append(", \nreason=");
+			builder.append(reason);
+			builder.append("]");
+			return builder.toString();
+		}
+
 	}
 	
 	private static class Reference<T> {
@@ -338,16 +414,24 @@ public class BookingServlet extends RpcServlet {
 	private String cancel(
 		@RequestBody final BookingModificationRequest request
 	) {
+		logger.info("received booking cancellation request: " + request);
+		
 		final String userId =
 			gitkitUser.get().getLocalId();
 		
 		final Reference<Boolean> refunded =
 			new Reference<>();
 		
-		if (
-			userId.equals(request.professionalId) ||
-			userId.equals(request.consumerId)
-		) {
+		final boolean requestedByPro = 
+			userId.equals(request.professionalId);
+		
+		final boolean requestedByCon = 
+			userId.equals(request.consumerId);
+		
+		logger.info("requestedByPro: " + requestedByPro);
+		logger.info("requestedByCon: " + requestedByCon);
+		
+		if (requestedByPro || requestedByCon) {
 			final String stripeRefundNonce = 
 				UUID.randomUUID().toString();
 			
@@ -374,10 +458,17 @@ public class BookingServlet extends RpcServlet {
 						final Booking booking =
 							professionalDailyAgenda.getBooking(request.bookingId);
 						
+						logger.info("booking: " + booking);
+						
 						if (
-							booking.getPaymentStatus() == PaymentStatus.PAID &&
+							(
+								booking.getPaymentStatus() == PaymentStatus.PAID ||
+								booking.getPaymentStatus() == null
+							) &&
 							booking.getPaymentMethod() == PaymentMethod.STRIPE_CARD
 						) {
+							logger.info("checking to see if it is eligible for refund");
+							
 							final ProfessionalInformation professionalInformation =
 								professionalInformationResult.safe();
 							
@@ -387,33 +478,50 @@ public class BookingServlet extends RpcServlet {
 							final LocalDateTime now =
 								LocalDateTime.now();
 							
+							logger.info("current time: " + now);
+							
 							final LocalDateTime bookingTime =
 								LocalDateTime.of(request.date, booking.getStartTime());
 							
+							logger.info("booking time: " + bookingTime);
+							
 							final LocalDateTime refundDeadline =
 								bookingTime.minusHours(refundHours);
+
+							logger.info("refund deadline: " + refundDeadline);
 							
 							if (now.isBefore(refundDeadline)) { 
+								logger.info("before deadline, attempting a refund");
+								
 								final Charge charge =
 									stripe
 										.charge()
 										.retrieve(booking.getStripeChargeId())
 										.get();
 								
+								logger.info("got charge: " + charge);
+								
 								if (
 									charge.getRefunded() && 
 									(charge.getAmountRefunded().intValue() >= charge.getAmount().intValue())
 								) {
-									// already refunded, don't refund again
+									logger.info("already refunded, don't refund again");
 									
 								} else {
-									stripe
+									logger.info("sending refund to stripe");
+									
+									final Refund refund =
+										stripe
 										.refund()
 										.create(charge)
 										.reverseTransfer(true)
-										.metadata("reason", "refund due to cancellation")
+										.refundApplicationFee(true)
+										.metadata("reason", "refund due to cancellation " + (requestedByPro ? " by the professional" : " by the consumer	0..,"
+												+ ""))
 										.idempotencyKey(stripeRefundNonce)
 										.get();
+									
+									logger.info("got refund: " + refund);
 								}
 
 								refunded = true;
@@ -424,6 +532,8 @@ public class BookingServlet extends RpcServlet {
 							consumerDailyAgendaResult.now();
 						
 						if (refunded) {
+							logger.info("setting refunded status on booking");
+							
 							professionalDailyAgenda.getBooking(booking.getId()).setPaymentStatus(PaymentStatus.REFUNDED);
 							consumerDailyAgenda.getBooking(booking.getId()).setPaymentStatus(PaymentStatus.REFUNDED);
 						}
@@ -448,14 +558,12 @@ public class BookingServlet extends RpcServlet {
 						final ConsumerInformation consumerInformation =
 							ofy().load().key(Key.create(ConsumerInformation.class, request.consumerId)).now();
 	
-						Mail.mail(
-							"noreply@bookstuf.com", "bookstuf.com", 
-							
-							consumerInformation.getContactEmail(), consumerInformation.getContactEmail(), 
-							
-							"Your booking on " + request.date + " has been cancelled" + (refunded.value ? " and refunded" : ""), 
-							
-							"Your booking on " + request.date + " has been cancelled" + (refunded.value ? " and refunded" : ""));
+						Mail
+						.from("noreply@bookstuf.com", "bookstuf.com")
+						.to(consumerInformation.getContactEmail(), consumerInformation.getContactEmail())
+						.subject("Your booking on " + request.date + " has been cancelled" + (refunded.value ? " and refunded" : "") + (requestedByPro ? " by the professional" : ""))
+						.body("Your booking on " + request.date + " has been cancelled" + (refunded.value ? " and refunded" : "") + (requestedByPro ? " by the professional" : ""))
+						.send();
 						
 						return null;
 					}
@@ -523,6 +631,7 @@ public class BookingServlet extends RpcServlet {
 									.refund()
 									.create(charge)
 									.reverseTransfer(true)
+									.refundApplicationFee(true)
 									.metadata("reason", "professional issued refund")
 									.idempotencyKey(stripeRefundNonce)
 									.get();
@@ -557,14 +666,12 @@ public class BookingServlet extends RpcServlet {
 						final ConsumerInformation consumerInformation =
 							ofy().load().key(Key.create(ConsumerInformation.class, request.consumerId)).now();
 
-						Mail.mail(
-							"noreply@bookstuf.com", "bookstuf.com", 
-							
-							consumerInformation.getContactEmail(), consumerInformation.getContactEmail(), 
-							
-							"Your booking on " + request.date + " has been refunded", 
-							
-							"Your booking on " + request.date + " has been refunded");
+						Mail
+						.from("noreply@bookstuf.com", "bookstuf.com")
+						.to(consumerInformation.getContactEmail(), consumerInformation.getContactEmail())
+						.subject("Your booking on " + request.date + " has been refunded")
+						.body("Your booking on " + request.date + " has been refunded")
+						.send();
 						
 						return null;
 					}
@@ -593,7 +700,10 @@ public class BookingServlet extends RpcServlet {
 		
 		final int NUM_DAYS = 7;
 		
-		// initiate fetch for daily agendas
+		// initiate fetch for daily agendas and availiability
+		final LoadResult<ProfessionalInformation> professionalInfoResult =
+			ofy().load().key(Key.create(ProfessionalInformation.class, userId));
+		
 		final List<Key<DailyAgenda>> dailyAgendaKeysOne =
 			getProfessionalDailyAgenda(userId, startDate, NUM_DAYS);
 
@@ -606,9 +716,7 @@ public class BookingServlet extends RpcServlet {
 		final Map<Key<ConsumerDailyAgenda>, ConsumerDailyAgenda> dailyAgendaResultTwo =
 			ofy().load().keys(dailyAgendaKeysTwo);	
 		
-		
-		
-		
+
 		final ArrayList<PublicDailyAvailability> result =
 			new ArrayList<>();
 
@@ -617,6 +725,12 @@ public class BookingServlet extends RpcServlet {
 
 		final Iterator<Key<ConsumerDailyAgenda>> agendaIteratorTwo =
 			dailyAgendaKeysTwo.iterator();
+
+		final LinkedList<Availability> availability =
+			professionalInfoResult.safe().getAvailability();
+
+		final Map<DayOfWeek, TreeMap<LocalTime, Availability>> dailyAvailability =
+			sortAvailability(availability);
 		
 		int index = 0;
 		
@@ -648,7 +762,7 @@ public class BookingServlet extends RpcServlet {
 					date, 
 					userBookings, 
 					null,
-					null);
+					dailyAvailability.get(date.getDayOfWeek()));
 			
 			result.add(publicDailyAvailability);
 			

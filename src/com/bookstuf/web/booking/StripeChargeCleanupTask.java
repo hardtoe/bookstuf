@@ -111,6 +111,7 @@ public class StripeChargeCleanupTask implements DeferredTask {
 			stripe.refund()
 				.create(charge)
 				.reverseTransfer(true)
+				.refundApplicationFee(true)
 				.metadata("reason", "bookstuf server was unable to guarantee booking was made due to datastore errors")
 				.get();
 			

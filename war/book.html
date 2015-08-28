@@ -108,182 +108,17 @@
 		</script>
 
 		<script type="text/javascript">
+	
 		
-		
-		
-			var calendarTemplate;
 			var cardTemplate;
 
-			var height = 50;
+			var calendar = new Calendar();
 			
 			
 			function loadCalendar(callback) {
 				$.get('/booking/availability', {'professionalUserId' : getUrlParameter("id")})
 				.done(function(data) {
-					var calendarData = JSON.parse(data);
-					$('#calendar').html(calendarTemplate.render({'days': calendarData}));
-					
-					var inFixedState = false;
-					
-					var currentHover;
-					var currentAgenda;
-					var currentAgendaData;
-					
-					var yStart = 0;
-					var yEnd = yStart + 50; // TODO: change to actual service length
-									
-
-					
-					var updateTime = function() {
-						var hour = Math.floor(yStart / 50);
-						var minute = ((yStart % 50) * 60) / 50;
-						var ampm;
-						
-						if (hour == 0) {
-							hour = 12;
-							ampm = 'AM';
-							
-						} else if (hour <= 11) {
-							ampm = 'AM';
-							
-						} else if (hour == 12) {
-							ampm = 'PM';
-							
-						} else {
-							hour = hour - 12;
-							ampm = 'PM';
-						}
-						
-						$('#booking-time').text(hour + ':' + (minute < 10 ? '0' : '') + minute + ' ' + ampm);
-					}
-					
-					// find first available spot
-					
-					var tryOffset = function(pixel) {
-						var yStartNew = (pixel + yStart);
-						var yEndNew = (pixel + yEnd);
-						
-						if (
-							yStartNew < 0 ||
-							yEndNew > (24 * 50)
-						) {
-							// booking is off the agenda, invalid
-							return false;
-						}
-						
-						var hasSolution = true;
-						
-						for (i = 0; i < currentAgendaData.length; i++) {
-							var booking =
-								currentAgendaData[i];
-							
-							var bookingStart =
-								booking['top'];
-							
-							var bookingEnd =
-								booking['top'] + booking['height'];
-							
-							if (
-								yStartNew >= bookingEnd ||
-								bookingStart >= yEndNew
-							) {
-								// this one is good
-								
-							} else {
-								hasSolution = false;
-							}
-						}
-
-						if (hasSolution) {
-							// here we have a good solution
-							yStart = yStartNew;
-							yEnd = yEndNew;
-							currentHover.css('top', yStart + 'px');
-							return true;
-							
-						} else {
-							return false;
-						}
-					}
-					
-					var findClosestSolution = function() {
-						// iterate over all 25 pixel increments (30 minutes)
-						for (pixel = 0; pixel < (50 * 24); pixel += 25) {
-							if (tryOffset(pixel)) {
-								return true;
-							}
-							
-							if (tryOffset(-pixel)) {
-								return true;
-							}
-						}
-						
-						return false;
-					}
-					
-					$(".day-agenda").mouseenter(function(event) {
-						if (!inFixedState) {
-							currentHover =
-								$('<div class="booking-selection-hover" id="currentHover"></div>');
-
-							currentHover.css('height', height + 'px');
-							
-							currentHover.click(function(event) {
-								inFixedState = !inFixedState;
-								
-								if (inFixedState) {
-									currentHover.addClass("booking-selection").removeClass("booking-selection-hover");
-									
-								} else {
-									currentHover.addClass("booking-selection-hover").removeClass("booking-selection");
-								}
-							});
-							
-							currentAgenda =
-								$(this)[0];
-							
-							var index = 
-								$(this).attr('data-index');
-							
-							currentAgendaData =
-								calendarData[index]['bookedTimes'];
-							
-							$(this).append(currentHover);
-					
-							if (findClosestSolution()) {
-								// valid solution found, set date
-								updateTime();
-								$('#booking-date').text(calendarData[index]['day']);
-								currentHover.text($('#booking-time').text() + ' ' + $('#serviceId').find(":selected").attr('data-title'));
-								
-							} else {
-								// no valid location found
-								currentHover.remove();
-							}
-						
-						}
-					});
-					
-					$(".day-agenda").mouseleave(function(event) {
-						if (!inFixedState) {
-							currentHover.remove();
-						}
-					});
-					
-					$(".day-agenda").mousemove(function(event) {
-						if (!inFixedState) {
-							yStart = (Math.round((event.clientY - currentAgenda.getBoundingClientRect()['top']) / 25.0) * 25) - (height / 2.0);
-							yEnd = yStart + height;
-						
-							var valid = findClosestSolution();
-							
-							if (valid) {
-								updateTime();
-								currentHover.text($('#booking-time').text() + ' ' + $('#serviceId').find(":selected").attr('data-title'));
-							}
-						}
-					});
-					
+					calendar.setData(JSON.parse(data));
 					callback();
 				});
 			}
@@ -330,12 +165,8 @@
 			}
 			
 			$(function() {
-
 				var id = 
 					getUrlParameter("id");
-				
-				calendarTemplate = 
-					Hogan.compile($('#calendar-template').html());
 				
 				loadCalendar(function() {
 					window.scrollTo(0, 375);
@@ -363,15 +194,15 @@
 					$('#services').html(servicesTemplate.render(servicesData));
 
 					$('#serviceId').change(function() {
-						height = ($(this).find(":selected").attr('data-duration') * 50) / 60;
-						$('#currentHover').css('height', height + 'px');
+						calendar.height = ($(this).find(":selected").attr('data-duration') * 50) / 60;
+						$('#currentHover').css('height', calendar.height + 'px');
 						$('#currentHover').text($('#booking-time').text() + ' ' + $(this).find(":selected").attr('data-title'));
 					});
 					
 					$('#serviceId').val(getUrlParameter("serviceId"));
 					
-					height = ($('#serviceId').find(":selected").attr('data-duration') * 50) / 60;
-					$('#currentHover').css('height', height + 'px');
+					calendar.height = ($('#serviceId').find(":selected").attr('data-duration') * 50) / 60;
+					$('#currentHover').css('height', calendar.height + 'px');
 					$('#currentHover').text($('#booking-time').text() + ' ' + $(this).find(":selected").attr('data-title'));
 				});
 				
@@ -414,8 +245,9 @@
 							var msg = rsp['error'];
 
 							$('.payment-errors').text(msg);
-							$('#book-now-button').prop('disabled', false);
-							loadCalendar(function() {});
+							loadCalendar(function() {
+								$('#book-now-button').prop('disabled', false);
+							});
 							loadCards();
 						});
 					};
@@ -448,58 +280,8 @@
 		</script>
 		
 		<style>
-			.half-field {
-				width: 146px;
-			}
-			
-			.labeless-field {
-				padding: 10px 0;
-			}
-			
-			.day-container {
-				float: left;
-				width: 200px;
-			}
-			
-			.day-header {
-				height: 40px;
-			}
-			
-			.day-agenda {
-				position: relative;
-				height: 1200px;
-				z-index: 0;
-			}
-			
-			.booking-selection-hover {
-				position: absolute;
-				z-index: 30;
-				background: red;
-				width: 100%;
-				height: 50px;
-			}
-			
-			.booking-selection {
-				position: absolute;
-				z-index: 30;
-				background: #4F4;
-				width: 100%;
-				height: 50px;
-			}
-			
-			.booking {
-				position: absolute;
-				z-index: 10;
-				background: gray;
-				width: 100%;
-			}
-			
-			.consumer-booking {
-				position: absolute;
-				z-index: 20;
-				background: orange;
-			}
-			
+		
+
 			.appointment-card {
 				position: fixed;
 				

@@ -34,16 +34,14 @@ public class Luke {
 			
 			t.printStackTrace(new PrintStream(stackTraceStream));
 
-		    Mail.mail(
-		    	"noreply@bookstuf.com", "bookstuf.com", 
-		    	
-		    	"lvalenty@gmail.com", "lvalenty@gmail.com", 
-		    	
-		    	subject, 
-		    	
-		    	message + 
-	    		"\n\n" +
-	    		stackTrace.toString());    
+		    Mail
+			.from("noreply@bookstuf.com", "bookstuf.com")
+			.to("lvalenty@gmail.com", "lvalenty@gmail.com")
+			.subject(subject)
+			.body(message + 
+				    		"\n\n" +
+				    		stackTrace.toString())
+			.send();    
 
 		} catch (final Exception e) {
 		    log.log(Level.SEVERE, "FATAL - EMAIL: unable to send admin failure email", e);

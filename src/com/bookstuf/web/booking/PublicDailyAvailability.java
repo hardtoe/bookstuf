@@ -27,8 +27,8 @@ public class PublicDailyAvailability {
 	public PublicDailyAvailability(
 		final int index,
 		final LocalDate day,
-		final TreeMap<LocalTime, Booking> consumerAgenda,
-		final TreeMap<LocalTime, Booking> professionalAgenda,
+		final TreeMap<LocalTime, Booking> visibleAgenda,
+		final TreeMap<LocalTime, Booking> hiddenAgenda,
 		final TreeMap<LocalTime, Availability> professionalAvailability
 	) {
 		this.index = index;
@@ -54,7 +54,7 @@ public class PublicDailyAvailability {
 				!previousSlotIsAvailable;
 			
 			final boolean currentSlotIsAvailable =
-				isAvailable(t, professionalAgenda, professionalAvailability);
+				isAvailable(t, hiddenAgenda, professionalAvailability);
 			
 			final boolean currentSlotIsBooked =
 				!currentSlotIsAvailable;
@@ -79,8 +79,8 @@ public class PublicDailyAvailability {
 		}
 		
 		// add consumer's agenda
-		if (consumerAgenda != null) {
-			for (final Booking b : consumerAgenda.values()) {
+		if (visibleAgenda != null) {
+			for (final Booking b : visibleAgenda.values()) {
 				bookedTimes.add(new PublicBooking(b));
 			}
 		}

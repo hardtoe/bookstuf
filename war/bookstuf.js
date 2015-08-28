@@ -412,3 +412,189 @@ function initializeSelect(form) {
 		});
 	})
 }
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// {{{ CALENDAR PROTOTYPE
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+function Calendar() {
+	var self = this;
+	
+	// mustache template for calendar data
+	self.calendarTemplate = 
+		Hogan.compile($('#calendar-template').html());
+	
+	// height of service (50 pixels == 60 minutes)
+	self.height = 50;
+	
+	self.yStart = 0;
+	self.yEnd = self.yStart + self.height; 
+
+	self.inFixedState = false;
+	
+	self.currentHover;
+	self.currentAgenda;
+	self.currentAgendaData;
+	
+	///////////////////////////////////////////////////////////////////////////////////////////////////////
+	self.tryOffset = function(pixel) {
+		var yStartNew = (pixel + self.yStart);
+		var yEndNew = (pixel + self.yEnd);
+		
+		if (
+			yStartNew < 0 ||
+			yEndNew > (24 * 50)
+		) {
+			// booking is off the agenda, invalid
+			return false;
+		}
+		
+		var hasSolution = true;
+		
+		for (i = 0; i < self.currentAgendaData.length; i++) {
+			var booking =
+				self.currentAgendaData[i];
+			
+			var bookingStart =
+				booking['top'];
+			
+			var bookingEnd =
+				booking['top'] + booking['height'];
+			
+			if (
+				yStartNew >= bookingEnd ||
+				bookingStart >= yEndNew
+			) {
+				// this one is good
+				
+			} else {
+				hasSolution = false;
+			}
+		}
+
+		if (hasSolution) {
+			// here we have a good solution
+			self.yStart = yStartNew;
+			self.yEnd = yEndNew;
+			self.currentHover.css('top', self.yStart + 'px');
+			return true;
+			
+		} else {
+			return false;
+		}
+	};
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////
+	self.updateTime = function() {
+		var hour = Math.floor(self.yStart / 50);
+		var minute = ((self.yStart % 50) * 60) / 50;
+		var ampm;
+		
+		if (hour == 0) {
+			hour = 12;
+			ampm = 'AM';
+			
+		} else if (hour <= 11) {
+			ampm = 'AM';
+			
+		} else if (hour == 12) {
+			ampm = 'PM';
+			
+		} else {
+			hour = hour - 12;
+			ampm = 'PM';
+		}
+		
+		$('#booking-time').text(hour + ':' + (minute < 10 ? '0' : '') + minute + ' ' + ampm);
+	};
+	
+	///////////////////////////////////////////////////////////////////////////////////////////////////////
+	self.findClosestSolution = function() {
+		// iterate over all 25 pixel increments (30 minutes)
+		for (pixel = 0; pixel < (50 * 24); pixel += 25) {
+			if (self.tryOffset(pixel)) {
+				return true;
+			}
+			
+			if (self.tryOffset(-pixel)) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	///////////////////////////////////////////////////////////////////////////////////////////////////////
+	self.setData = function(calendarData) {
+		self.inFixedState = false;
+		
+		$('#calendar').html(self.calendarTemplate.render({'days': calendarData}));
+
+		$(".day-agenda").mouseenter(function(event) {
+			if (!self.inFixedState) {
+				self.currentHover =
+					$('<div class="booking-selection-hover" id="currentHover"></div>');
+
+				self.currentHover.css('height', self.height + 'px');
+				
+				self.currentHover.click(function(event) {
+					self.inFixedState = !self.inFixedState;
+					
+					if (self.inFixedState) {
+						self.currentHover.addClass("booking-selection").removeClass("booking-selection-hover");
+						
+					} else {
+						self.currentHover.addClass("booking-selection-hover").removeClass("booking-selection");
+					}
+				});
+				
+				self.currentAgenda =
+					$(this)[0];
+				
+				var index = 
+					$(this).attr('data-index');
+				
+				self.currentAgendaData =
+					calendarData[index]['bookedTimes'];
+				
+				$(this).append(self.currentHover);
+		
+				if (self.findClosestSolution()) {
+					// valid solution found, set date
+					self.updateTime();
+					$('#booking-date').text(calendarData[index]['day']);
+					self.currentHover.text($('#booking-time').text() + ' ' + $('#serviceId').find(":selected").attr('data-title'));
+					
+				} else {
+					// no valid location found
+					self.currentHover.remove();
+				}
+			
+			}
+		});
+		
+		$(".day-agenda").mouseleave(function(event) {
+			if (!self.inFixedState) {
+				self.currentHover.remove();
+			}
+		});
+		
+		$(".day-agenda").mousemove(function(event) {
+			if (!self.inFixedState) {
+				self.yStart = (Math.round((event.clientY - self.currentAgenda.getBoundingClientRect()['top']) / 25.0) * 25) - (self.height / 2.0);
+				self.yEnd = self.yStart + self.height;
+			
+				var valid = self.findClosestSolution();
+				
+				if (valid) {
+					self.updateTime();
+					self.currentHover.text($('#booking-time').text() + ' ' + $('#serviceId').find(":selected").attr('data-title'));
+				}
+			}
+		});
+	};		
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// }}} CALENDAR PROTOTYPE
+///////////////////////////////////////////////////////////////////////////////////////////////////////

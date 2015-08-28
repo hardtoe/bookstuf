@@ -27,16 +27,16 @@
 		<!-- dropzone.js -->
 		<script src="dropzone.js"></script>
 		<link type=text/css rel=stylesheet href="dropzone.css" />
-
-		<!-- bookstuf -->
-		<script type="text/javascript" src="bookstuf.js"></script>
-		<link type=text/css rel=stylesheet href="bookstuf.css" />
 			
 		<!-- material design light -->
 		<link rel="stylesheet" href="https://storage.googleapis.com/code.getmdl.io/1.0.0/material.blue-red.min.css">
 		<script src="https://storage.googleapis.com/code.getmdl.io/1.0.0/material.min.js"></script>
 		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
+
+		<!-- bookstuf -->
+		<script type="text/javascript" src="bookstuf.js"></script>
+		<link type=text/css rel=stylesheet href="bookstuf.css" />
 
 		<script type="text/javascript">
 			function refreshProfilePhotos() {
@@ -63,7 +63,6 @@
 					});
 				});
 			}
-			
 
 			$(function() {
 				Dropzone.options.photoDropzone = {
@@ -75,9 +74,74 @@
 				};
 				
 				refreshProfilePhotos()
+				
+				// load calendar
+				var calendar = new Calendar();
+				
+				var loadCalendar = function() {
+					$.get('/booking/agenda')
+					.done(function(data) {
+						calendar.setData(JSON.parse(data));
+						
+						$('.consumer-booking-cancel').click(function(event) {
+							var id = $(this).attr('data-id');
+							var professionalId = $(this).attr('data-professional-id');
+							var consumerId = $(this).attr('data-consumer-id');
+							var date = $(this).attr('data-date');
+							
+							if (confirm("This will cancel the booking and refund the payment if eligible.")) {
+								var bookingModificationRequest = {
+									'professionalId': professionalId, 
+									'consumerId': consumerId,
+									'date': date,
+									'bookingId': id,
+									'reason': 'cancelled'
+								};
+								
+								$.post('/booking/cancel', JSON.stringify(bookingModificationRequest))
+								.done(function(data){
+									loadCalendar();
+								})
+								.fail(function(data) {
+									alert("Unable to cancel the booking.  Try again later.");
+									loadCalendar();
+								});
+							}
+						});
+						
+						$('.consumer-booking-refund').click(function(event) {
+							var id = $(this).attr('data-id');
+							var professionalId = $(this).attr('data-professional-id');
+							var consumerId = $(this).attr('data-consumer-id');
+							var date = $(this).attr('data-date');
+							
+							if (confirm("This will refund the booking.")) {
+								var bookingModificationRequest = {
+									'professionalId': professionalId, 
+									'consumerId': consumerId,
+									'date': date,
+									'bookingId': id,
+									'reason': 'refunded by professional'
+								};
+								
+								$.post('/booking/refund', JSON.stringify(bookingModificationRequest))
+								.done(function(data){
+									loadCalendar();
+								})
+								.fail(function(data) {
+									alert("Unable to refund the booking.  Try again later.");
+									loadCalendar();
+								});
+							}
+						});
+					});
+				};
+				
+				loadCalendar();
 			});
 		</script>
-		
+
+
 		<style>
 			.profile-photo-container {
 				position: relative;
@@ -119,7 +183,38 @@
 		
 		  ga('create', 'UA-66119190-1', 'auto');
 		  ga('send', 'pageview');
+		</script>
 		
+		<script id="calendar-template" type="x-tmpl-mustache">
+			{{#days}}
+			<div class="day-container" id="day-container-{{index}}">
+				<div class="day-header">
+					<span class="day-header-day-of-week">{{dayOfWeek}}</span>
+					<span class="day-header-month">{{month}}</span>
+					<span class="day-header-day">{{dayOfMonth}}</span>
+				</div>
+				<div class="day-agenda" data-index="{{index}}">
+					{{#bookedTimes}}
+						{{#isPrivate}}
+						<div class="booking" style="top: {{top}}px; height: {{height}}px;"></div>
+						{{/isPrivate}}
+
+						{{^isPrivate}}
+						<div class="consumer-booking booking" style="top: {{top}}px; height: {{height}}px;">
+							<span class="consumer-booking-start-time">{{startTime}}</span>
+							<span class="consumer-booking-title">{{title}}</span>
+
+							<button class="consumer-booking-cancel" data-id="{{id}}" data-professional-id="{{professionalId}}" data-consumer-id="{{consumerId}}" data-date="{{day}}">Cancel</button>
+							
+							{{#isRefundable}}
+							<button class="consumer-booking-refund" data-id="{{id}}" data-professional-id="{{professionalId}}" data-consumer-id="{{consumerId}}" data-date="{{day}}">Refund</button>
+							{{/isRefundable}}
+						</div>
+						{{/isPrivate}}
+					{{/bookedTimes}}
+				</div>
+			</div>
+			{{/days}}
 		</script>
 	</head>
 	
@@ -158,7 +253,7 @@
 			
 			<main class="mdl-layout__content">
 				<section id="calendar-section" class="console-page">
-					1
+					<div class="calendar" id="calendar"></div>
 				</section>
 				
 				<section id="services-section" class="console-page">

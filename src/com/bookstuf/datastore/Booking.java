@@ -223,6 +223,34 @@ public class Booking implements Serializable {
 	public void setPaymentStatus(PaymentStatus paymentStatus) {
 		this.paymentStatus = paymentStatus;
 	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("Booking [\n    id=");
+		builder.append(id);
+		builder.append(", \nprofessional=");
+		builder.append(professional);
+		builder.append(", \nconsumer=");
+		builder.append(consumer);
+		builder.append(", \nservice=");
+		builder.append(service);
+		builder.append(", \nstartTime=");
+		builder.append(startTime);
+		builder.append(", \npaymentMethod=");
+		builder.append(paymentMethod);
+		builder.append(", \nstripeCustomerId=");
+		builder.append(stripeCustomerId);
+		builder.append(", \nstripeChargeId=");
+		builder.append(stripeChargeId);
+		builder.append(", \npaymentStatus=");
+		builder.append(paymentStatus);
+		builder.append("]");
+		return builder.toString();
+	}
 	
 	
 }

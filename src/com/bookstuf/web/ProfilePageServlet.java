@@ -18,30 +18,25 @@ import com.google.inject.Provider;
 import com.google.inject.Singleton;
 
 @Singleton
-public class ServicesPageServlet extends HttpServlet {
+public class ProfilePageServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	
 	private final Provider<UserManager> userService;
 	private final Logger logger;
-	
-	private final DefaultMustacheFactory mf;
-	private Mustache template;
 
-	
-	@Inject ServicesPageServlet(
+	private MustacheLoader m;
+
+	@Inject ProfilePageServlet(
 		final Provider<UserManager> userService,
 		final Logger logger
 	) {
 		this.userService = userService;
 		this.logger = logger;
-		
-	    this.mf = new DefaultMustacheFactory();
 	}
 	
 	@Override
 	public void init() throws ServletException {
-		super.init();
-		this.template = mf.compile(new InputStreamReader(getServletContext().getResourceAsStream("/WEB-INF/templates/ServicesPage.html")), "ServicesPage");	
+		this.m = new MustacheLoader(getServletContext());
 	}
 	
 	@Override
@@ -60,7 +55,7 @@ public class ServicesPageServlet extends HttpServlet {
 			userService.get().getProfessionalInformationByHandle(handle);
 		
 		if (userInformation != null) {
-		    template.execute(rsp.getWriter(), userInformation);
+		    m.load("ServicesPage.html").execute(rsp.getWriter(), userInformation);
 		}
 	}
 }

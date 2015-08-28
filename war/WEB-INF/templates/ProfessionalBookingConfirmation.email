@@ -1,0 +1,12 @@
+Hello {{name}},
+
+A client has booked an appointment on your calendar:
+
+    Date:    {{date}}
+    Time:    {{time}}
+    Who:     {{clientName}}
+    Service: {{service}}
+    Cost:    {{cost}}
+
+Have a nice day!
+

@@ -1,0 +1,18 @@
+Hello {{name}},
+
+Your booking has been accepted and is in our calendar:
+
+    Date:    {{date}}
+    Time:    {{time}}
+    Service: {{service}}
+    Cost:    {{cost}}
+    
+{{#cash}}
+Payment will be due at the time of the appointment.
+{{/cash}}
+
+{{#card}}
+Your card has been charged {{cost}} for the booking and no further payment will be needed.
+{{/card}}
+
+Have a nice day!

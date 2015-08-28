@@ -589,7 +589,7 @@ public class StripeApi extends StripeApiBase {
 			 * charge refunded.
 			 */
 			public final CreateMethod refundApplicationFee(
-					final String refundApplicationFee) {
+					final boolean refundApplicationFee) {
 				return set("refund_application_fee", refundApplicationFee);
 			}
 

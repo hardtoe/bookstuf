@@ -2,7 +2,7 @@ package com.bookstuf.appengine;
 
 import com.bookstuf.web.LoginServlet;
 import com.bookstuf.web.LogoutServlet;
-import com.bookstuf.web.ServicesPageServlet;
+import com.bookstuf.web.ProfilePageServlet;
 import com.bookstuf.web.PhotosServlet;
 import com.bookstuf.web.StripeServlet;
 import com.bookstuf.web.GitkitWidgetServlet;
@@ -44,6 +44,6 @@ class BookstufServletModule extends ServletModule {
 		
 		serve("/_ah/warmup").with(WarmupServlet.class);
 		
-		serveRegex("/[^/]+").with(ServicesPageServlet.class);
+		serveRegex("/[^/]+").with(ProfilePageServlet.class);
 	}
 }

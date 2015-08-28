@@ -16,6 +16,7 @@ import com.bookstuf.appengine.UserManager;
 import com.bookstuf.datastore.Booking;
 import com.bookstuf.datastore.ConsumerInformation;
 import com.bookstuf.datastore.PaymentMethod;
+import com.bookstuf.datastore.PaymentStatus;
 import com.bookstuf.datastore.ProfessionalPrivateInformation;
 import com.google.appengine.api.taskqueue.Queue;
 import com.google.appengine.api.taskqueue.QueueFactory;
@@ -227,6 +228,7 @@ public class StripePaymentStrategy extends PaymentStrategy {
 				.get();
 		
 		booking.setStripeChargeId(charge.getId());
+		booking.setPaymentStatus(PaymentStatus.PAID);
 	}
 
 	
