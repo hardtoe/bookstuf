@@ -9,9 +9,7 @@ Your booking has been accepted and is in our calendar:
     
 {{#cash}}
 Payment will be due at the time of the appointment.
-{{/cash}}
-
-{{#card}}
+{{/cash}}{{#card}}
 Your card has been charged {{cost}} for the booking and no further payment will be needed.
 {{/card}}
 

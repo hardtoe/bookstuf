@@ -1,0 +1,10 @@
+Hello {{name}},
+
+The charge for the following booking has been refunded by the professional:
+
+    Date:    {{date}}
+    Time:    {{time}}
+    Service: {{service}}
+    Cost:    {{cost}}
+
+Have a nice day!

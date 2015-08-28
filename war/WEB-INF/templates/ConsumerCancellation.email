@@ -1,0 +1,16 @@
+Hello {{name}},
+
+The following booking has been cancelled{{#isRefunded}} and refunded{{/isRefunded}}{{#requestedByPro}} by the professional{{/requestedByPro}}{{#requestedByCon}} per your request{{/requestedByCon}}.
+
+    Date:    {{date}}
+    Time:    {{time}}
+    Service: {{service}}
+    Cost:    {{cost}}
+    
+{{#isRefunded}}
+The charge has been refunded in full.
+{{/isRefunded}}{{^isRefunded}}
+The charge was not automatically refunded because the cancellation was within {{deadlineHours}} before the appointment.
+{{/isRefunded}}
+
+Have a nice day!

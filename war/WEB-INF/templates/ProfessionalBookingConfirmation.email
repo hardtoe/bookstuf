@@ -8,5 +8,11 @@ A client has booked an appointment on your calendar:
     Service: {{service}}
     Cost:    {{cost}}
 
+{{#cash}}
+Payment will be due at the time of the appointment.
+{{/cash}}{{#card}}
+The client's card has been charged {{cost}} for the booking and no further payment will be needed.
+{{/card}}
+
 Have a nice day!
 

@@ -163,7 +163,8 @@ public class Mail {
 		    email.setFromName(from.name);
 		    
 		    for (final Recipient to : toList) {
-			    email.addTo(to.address, to.name);
+			    email.addTo(to.address);
+			    //email.addToName(to.name);
 		    }
 		    
 		    for (final Recipient cc : ccList) {
@@ -186,7 +187,10 @@ public class Mail {
 		    	
 		    	bodyTemplate.execute(stringWriter, templateParameters);
 		    	
-		    	email.setText(stringWriter.toString());
+		    	final String body = 
+		    		stringWriter.toString();
+		    	
+				email.setText(body);
 		    }
 		   
 		    sendgrid.send(email);
