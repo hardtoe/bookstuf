@@ -335,7 +335,7 @@ public class BookingServlet extends RpcServlet {
 	}
 
 
-	private List<Key<DailyAgenda>> getProfessionalDailyAgenda(
+	public static List<Key<DailyAgenda>> getProfessionalDailyAgenda(
 		final String professionalUserId, 
 		final LocalDate startDate,
 		final int numDays
@@ -356,7 +356,7 @@ public class BookingServlet extends RpcServlet {
 		return keys;
 	}
 	
-	private List<Key<ConsumerDailyAgenda>> getConsumerDailyAgenda(
+	public static List<Key<ConsumerDailyAgenda>> getConsumerDailyAgenda(
 		final String consumerUserId, 
 		final LocalDate startDate,
 		final int numDays
@@ -943,7 +943,7 @@ public class BookingServlet extends RpcServlet {
 		return result;
 	}
 	
-	private Map<DayOfWeek, TreeMap<LocalTime, Availability>> sortAvailability(
+	public static Map<DayOfWeek, TreeMap<LocalTime, Availability>> sortAvailability(
 		final LinkedList<Availability> availability
 	) {
 		final Map<DayOfWeek, TreeMap<LocalTime, Availability>> result =
@@ -965,7 +965,7 @@ public class BookingServlet extends RpcServlet {
 		return result;
 	}
 
-	private TreeMap<LocalTime, Availability> get(
+	public static TreeMap<LocalTime, Availability> get(
 		final Map<DayOfWeek, TreeMap<LocalTime, Availability>> result,
 		final DayOfWeek dayOfWeek
 	) {
@@ -980,7 +980,7 @@ public class BookingServlet extends RpcServlet {
 		return dayOfWeekAvailability;
 	}
 
-	private <T extends DailyAgenda> TreeMap<LocalTime, Booking> bookings(
+	public static <T extends DailyAgenda> TreeMap<LocalTime, Booking> bookings(
 		final T value
 	) {
 		if (value != null) {

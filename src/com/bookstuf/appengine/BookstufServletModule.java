@@ -1,5 +1,6 @@
 package com.bookstuf.appengine;
 
+import com.bookstuf.web.ICalServlet;
 import com.bookstuf.web.LoginServlet;
 import com.bookstuf.web.LogoutServlet;
 import com.bookstuf.web.ProfilePageServlet;
@@ -43,7 +44,8 @@ class BookstufServletModule extends ServletModule {
 		serve("/stripe").with(StripeServlet.class);
 		
 		serve("/_ah/warmup").with(WarmupServlet.class);
-		
+
+		serveRegex("/[^/]+/cal.ics").with(ICalServlet.class);
 		serveRegex("/[^/]+").with(ProfilePageServlet.class);
 	}
 }

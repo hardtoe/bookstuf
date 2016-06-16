@@ -10,6 +10,7 @@ import java.util.logging.Logger;
 import org.threeten.bp.DayOfWeek;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.LocalTime;
+import org.threeten.bp.ZoneId;
 
 import com.bookstuf.Luke;
 import com.bookstuf.appengine.RetryHelper;
@@ -41,6 +42,7 @@ public class SingleBookingStrategy extends BookingStrategy {
 	private DailyAgenda professionalDailyAgendaTwo;
 	private ConsumerDailyAgenda consumerDailyAgenda;
 	private ProfessionalInformation professionalInfo;
+	private ConsumerInformation consumerInfo;
 	private LinkedList<Availability> availability;
 	
 	public SingleBookingStrategy(
@@ -55,18 +57,27 @@ public class SingleBookingStrategy extends BookingStrategy {
 	
 	@Override
 	public void prepare() {
-		// initiate fetch for daily agendas
-		final Result<DailyAgenda> professionalDailyAgendaResultOne =
-			getProfessionalDailyAgenda(request.professionalUserId, request.date);
-		
-		final Result<ConsumerDailyAgenda> professionalDailyAgendaResultTwo =
-			getConsumerDailyAgenda(Key.create(ConsumerInformation.class, request.professionalUserId), request.date);
-		
-		final Result<ConsumerDailyAgenda> consumerDailyAgendaResult =
-			getConsumerDailyAgenda(booking.getConsumer(), request.date);
-
 		final LoadResult<ProfessionalInformation> professionalInfoResult =
 			ofy().load().key(booking.getProfessional());
+		
+		final LoadResult<ConsumerInformation> consumerInfoResult =
+			ofy().load().key(booking.getConsumer());
+		
+		professionalInfo = 
+			professionalInfoResult.safe();
+		
+		consumerInfo = 
+			consumerInfoResult.safe();
+		
+		// initiate fetch for daily agendas
+		final Result<DailyAgenda> professionalDailyAgendaResultOne =
+			getProfessionalDailyAgenda(request.professionalUserId, request.date, professionalInfo.getTimezone());
+		
+		final Result<ConsumerDailyAgenda> professionalDailyAgendaResultTwo =
+			getConsumerDailyAgenda(Key.create(ConsumerInformation.class, request.professionalUserId), request.date, professionalInfo.getTimezone());
+		
+		final Result<ConsumerDailyAgenda> consumerDailyAgendaResult =
+			getConsumerDailyAgenda(booking.getConsumer(), request.date, professionalInfo.getTimezone()); // FIXME: this needs to be changed to consumer timezone
 
 
 		// wait for the daily agendas to be ready
@@ -78,9 +89,6 @@ public class SingleBookingStrategy extends BookingStrategy {
 		
 		consumerDailyAgenda =
 			consumerDailyAgendaResult.now();
-		
-		professionalInfo = 
-			professionalInfoResult.safe();
 		
 		availability =
 			professionalInfo.getAvailability();
@@ -106,6 +114,26 @@ public class SingleBookingStrategy extends BookingStrategy {
 		professionalDailyAgendaOne.add(booking);
 		consumerDailyAgenda.add(booking);
 		
+		// set booking location
+		booking.setLocation(
+			professionalInfo.getAddressLine1() + " " + professionalInfo.getAddressLine2() + ", " +
+			professionalInfo.getCity() + ", " + professionalInfo.getState() + " " + professionalInfo.getZipcode());
+		
+		// set booking attendees
+		booking.setProfessionalName(
+			professionalInfo.getFirstName() + " " + professionalInfo.getLastName());
+		
+		booking.setProfessionalEmail(
+			professionalInfo.getContactEmail());	
+		
+		if (consumerInfo.getFirstName() != null) {
+			booking.setConsumerName(
+				consumerInfo.getFirstName() + " " + consumerInfo.getLastName());
+		}
+		
+		booking.setConsumerEmail(
+			consumerInfo.getContactEmail());
+		
 		// save daily agendas back to the datastore
 		ofy().save().entity(professionalDailyAgendaOne);
 		ofy().save().entity(consumerDailyAgenda);
@@ -113,7 +141,8 @@ public class SingleBookingStrategy extends BookingStrategy {
 
 	private Result<DailyAgenda> getProfessionalDailyAgenda(
 		final String professionalUserId, 
-		final LocalDate date
+		final LocalDate date,
+		final ZoneId timezone
 	) {
 		final Key<DailyAgenda> key =
 			DailyAgenda.createProfessionalKey(professionalUserId, date);
@@ -131,6 +160,7 @@ public class SingleBookingStrategy extends BookingStrategy {
 					final DailyAgenda dailyAgenda =
 						new DailyAgenda();
 					
+					dailyAgenda.setTimezone(timezone);
 					dailyAgenda.setOwnerAndDate(professionalUserId, date);
 					
 					return dailyAgenda;
@@ -141,7 +171,8 @@ public class SingleBookingStrategy extends BookingStrategy {
 	
 	private Result<ConsumerDailyAgenda> getConsumerDailyAgenda(
 		final Key<ConsumerInformation> consumerKey,
-		final LocalDate date
+		final LocalDate date,
+		final ZoneId timezone
 	) {
 		final String consumerUserId =
 			consumerKey.getName();
@@ -162,6 +193,7 @@ public class SingleBookingStrategy extends BookingStrategy {
 					final ConsumerDailyAgenda dailyAgenda =
 						new ConsumerDailyAgenda();
 					
+					dailyAgenda.setTimezone(timezone);
 					dailyAgenda.setOwnerAndDate(consumerUserId, date);
 					
 					return dailyAgenda;

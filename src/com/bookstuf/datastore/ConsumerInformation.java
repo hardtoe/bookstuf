@@ -1,5 +1,7 @@
 package com.bookstuf.datastore;
 
+import org.threeten.bp.ZoneId;
+
 import com.bookstuf.PublicReadOnly;
 import com.googlecode.objectify.annotation.Cache;
 import com.googlecode.objectify.annotation.Entity;
@@ -20,6 +22,8 @@ public class ConsumerInformation {
     String phoneNumber;
     String contactEmail;
 
+    ZoneId timezone;
+    
     @PublicReadOnly
     boolean hasStripeCustomer;
     

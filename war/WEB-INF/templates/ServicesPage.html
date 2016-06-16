@@ -1,4 +1,427 @@
 <html>
+<head>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-66119190-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	
+	<!-- jQuery -->
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+	
+	<!-- JavaScript Cookie -->
+	<script src="cookie.js"></script>
+	
+	<!-- gitkit -->
+	<script type="text/javascript" src="https://www.gstatic.com/authtoolkit/js/gitkit.js"></script>
+	<link type=text/css rel=stylesheet href="https://www.gstatic.com/authtoolkit/css/gitkit.css" />
+
+	<!-- dropzone.js -->
+	<script src="dropzone.js"></script>
+	<link type=text/css rel=stylesheet href="dropzone.css" />
+
+	<!-- bookstuf -->
+	<script type="text/javascript" src="bookstuf.js"></script>
+	<link type=text/css rel=stylesheet href="bookstuf.css" />
+		
+	<!-- material design light -->
+	<link rel="stylesheet" href="https://storage.googleapis.com/code.getmdl.io/1.0.0/material.blue-red.min.css">
+	<script src="https://storage.googleapis.com/code.getmdl.io/1.0.0/material.min.js"></script>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
+
+	<style>
+		.hero {
+			background: url('tennis-hero.jpg') center / cover;
+			width: 100%;
+			height: 180px;
+		}
+
+		.hero-blurb {
+			text-align: center;
+			border-bottom: solid 1px rgba(0,0,0,.1);
+			padding-bottom: 1em;
+		}
+
+		@media only screen and (max-width : 667px) {
+			.hero {
+				height: 100px;
+			}
+			.hero h3, .hero h4 {
+				font-size: 1.2em;
+				padding: 0;
+			}
+		}
+		.debug {
+			background-color: red;
+		}
+		
+		.contact-card > .mdl-card__title {
+			color: #fff;
+			height: 300px;
+			background: url('{{photo.url}}') top / cover;
+			/* 
+				I set this to top / center but center / center 
+				makes more sense for images with the face dead center :/ 
+			
+				If it's set via js after the page loads make sure you 
+				don't actually load a picture of Luke, but rather a
+				typical face placeholder, or, you know, load the
+				page with the correct image to start with
+				
+			*/
+		}
+		.contact-card > .mdl-card__menu {
+			color: #fff;
+		}
+		.location-card > .mdl-card__title {
+			color: #333132;
+			height: 300px;
+			background-color: rgba(220,220,220,1.0); 
+			width: 100%;
+			padding: 0 !important;
+		}
+		.location-card iframe {
+			width: 100%;
+		}
+		.location-card > .mdl-card__menu {
+			color: #fff;
+		}
+		.contact-card .mdl-card__supporting-text, .location-card .mdl-card__supporting-text {
+			font-size: 1.0em;
+		}
+		.services-content {
+			width: 100%;
+		}
+		.services-content h3, h4 {
+			color: #333132;
+			text-align: center;
+			line-height: .8em;
+		}
+		.service-card2 {
+			color: #fff;
+		}
+		.service-card2 .service-name {
+			color: #fff;
+		}
+		.service-card2 a {
+			color: #fff !important;
+		}
+	
+		.service-card3 > .mdl-card__title {
+			color: #333132;
+			height: 200px;
+			background: url('http://placehold.it/200x200') center / cover;
+		}
+		.availability-item {
+			text-align: left;
+			padding: .4em 0;
+		}
+		.photo-card {
+			width: 256px;
+			height: 256px;
+			background: url('http://placehold.it/256x256') center /cover;
+			margin: 10px;
+		}
+		.mdl-layout-title > a {
+			text-decoration: none;
+			color: #fff;
+			font-weight: 300;
+		}
+		.mdl-layout__content h4, .mdl-layout__content h3 {
+			text-align: center;
+		}
+		
+		.mdl-layout__drawer-button > .material-icons {
+		    line-height: 1.8;
+		}
+		
+		.phone-avatar {
+			width:100%;
+			/* turn on for rounded corners
+				-webkit-border-radius: 999px;
+				-moz-border-radius: 999px;
+				border-radius: 999px;
+			*/
+		}
+		.phone-name {
+			font-size: 1.2em;
+			line-height: 80px;
+						/* line-height = .phone-avatar width + 2(padding) */
+			padding: 0 0 0 .8em;
+		}
+		.professional-bio-mobile .mdl-card__title img {
+			width: 60px;
+			-webkit-border-radius: 99px;
+			-moz-border-radius: 99px;
+			border-radius: 99px;			
+		}
+		.professional-bio-mobile .mdl-card__title h2 {
+			text-align: center;
+			margin: 0 auto;
+			height: 60px;
+			line-height: 60px;
+		}
+		.professional-bio-mobile, .professional-bio-mobile availability-item {
+		}
+		.professional-bio-mobile .mdl-card__supporting-text {
+			font-size: 1em;
+		}
+		.professional-bio-details-mobile div {
+			margin-top: 4px;
+		}
+		@media only screen and (max-width : 667px) {
+			.photo-card {
+				margin: 10px auto;
+			}
+			}
+			#hours-panel .general-availability p {
+				text-align: center;
+				line-height: 10px;
+				font-size: 16px;
+			}
+			
+/*
+		This class is targeting the hamburger menu, I'm not quite certain how to get that sucker to line up properly.
+		.material-icons {
+			background-color: red;
+		}	
+*/
+			
+	</style>
+</head>
+<body>
+	<div class="mdl-layout mdl-js-layout">
+
+		<header class="mdl-layout__header mdl-layout__header--scroll">
+			<div class="mdl-layout__header-row">
+				<!-- Title -->
+				<span class="mdl-layout-title">bookstuf</span>
+				<!-- Add spacer, to align navigation to the right -->
+				<div class="mdl-layout-spacer"></div>
+				<!-- Navigation -->
+				<!--  
+				<nav class="mdl-navigation">
+					<a class="mdl-navigation__link" href="">Link</a> <a
+						class="mdl-navigation__link" href="">Link</a> <a
+						class="mdl-navigation__link" href="">Link</a> <a
+						class="mdl-navigation__link" href="">Link</a>
+				</nav>
+				-->
+			</div>
+		</header>
+
+		<div class="mdl-layout__drawer">
+			<span class="mdl-layout-title">Menu</span>
+			<nav class="mdl-navigation">
+				<a class="mdl-navigation__link" href="">Bookings</a> 
+				<a class="mdl-navigation__link" href="">Settings</a>
+				<!--
+	      <a class="mdl-navigation__link" href="">Link</a>
+	      <a class="mdl-navigation__link" href="">Link</a>
+-->
+			</nav>
+		</div>
+		<main class="mdl-layout__content">
+
+
+		<div class="mdl-grid mdl-grid--no-spacing">
+			<div class="mdl-cell mdl-cell--12-col hero-blurb">
+				<h3>{{firstName}} {{lastName}}</h3>
+				<h4>{{aboutServices}}</h4>
+			</div>
+		</div>
+
+		<div class="content mdl-grid mdl-grid--no-spacing">
+
+			<!-- profile content for desktop -->
+			<div class="professional-bio mdl-cell mdl-cell--3-col mdl-cell--hide-tablet mdl-cell--hide-phone">
+				<div class="mdl-grid">
+					<!-- contact card -->
+					<div class="contact-card mdl-card mdl-shadow--2dp mdl-cell mdl-cell--12-col">
+						<div class="mdl-card__title">
+							<h2 class="mdl-card__title-text">{{firstName}} {{lastName}}</h2>
+						</div>
+						<div class="mdl-card__supporting-text">
+							<span class="about-professional">{{aboutMe}}</span>
+						</div>
+						<div class="mdl-card__actions mdl-card--border">
+							<a
+								class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect">
+								<span class="phone-number">{{phoneNumber}}</span>
+							</a>
+						</div>
+						<div class="mdl-card__actions mdl-card--border">
+							<a
+								class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect"
+								href="mailto:{{contactEmail}}"> {{contactEmail}} </a>
+						</div>
+						<!-- This share button was built into the card I copied from getmdl.io, but hey, maybe people actually want to share their favorite professional? -->
+						<div class="mdl-card__menu">
+							<button
+								class="mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect">
+								<i class="material-icons">share</i>
+							</button>
+						</div>
+					</div>
+					<!-- end contact card -->
+
+					<!-- location card -->
+					<div
+						class="location-card mdl-card mdl-shadow--2dp mdl-cell mdl-cell--12-col">
+						<div class="mdl-card__title">
+							<iframe height="300" frameborder="0"
+								src="https://www.google.com/maps/embed/v1/place?q=4077+Bothwell+Circle,+El+Dorado+Hills,+CA,+United+States&key=AIzaSyBBZieWzxtF-eib8qozcs5yGNiokR4utY8"
+								allowfullscreen></iframe>
+							<h2 class="mdl-card__title-text">
+								<!-- location name? -->
+							</h2>
+						</div>
+						<div class="profile-hours mdl-card__actions mdl-card--border">
+							<div class="general-availability">
+								{{#availability}}
+								<div class="availability-item">
+									<p>{{dayOfTheWeek}} {{start}} - {{end}}</p>
+								</div>
+								{{/availability}}
+							</div>
+						</div>
+					</div>
+					<!-- end location card -->
+				</div>
+				<!-- end profile-content -->
+			</div>
+			<!-- end professional bio -->
+
+			<!-- profile content for tablet and mobile -->
+			<div style="width: 100%;" class="mdl-grid mdl-cell--hide-desktop">
+				<div
+					class="professional-bio-mobile mdl-card mdl-shadow--2dp mdl-cell mdl-cell--8-col-tablet mdl-cell--4-col-phone">
+					<div class="mdl-tabs mdl-js-tabs mdl-js-ripple-effect">
+						<div class="mdl-tabs__tab-bar">
+							<a href="#contact-panel" class="mdl-tabs__tab is-active">Contact</a>
+							<a href="#address-panel" class="mdl-tabs__tab">Address</a> <a
+								href="#hours-panel" class="mdl-tabs__tab">Hours</a>
+
+						</div>
+						<div class="mdl-tabs__panel is-active" id="contact-panel">
+							<div class="mdl-card__actions">
+								<div class="mdl-grid">
+									<div class="mdl-cell mdl-cell--2-col mdl-cell--1-col-phone">
+										<img class="phone-avatar" src="{{photo.url}}" />
+									</div>
+									<div
+										class="mdl-cell mdl-cell--6-col mdl-cell--3-col-phone professional-bio-details-mobile">
+										<h2 class="mdl-card__title-text">{{firstName}}
+											{{lastName}}</h2>
+										<div>
+											<span class="phone-number">{{phoneNumber}}</span>
+										</div>
+										<div>
+											<a href="mailto:{{contactEmail}}">{{contactEmail}}</a>
+										</div>
+										<div class="about-professional">{{aboutMe}}</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="mdl-tabs__panel" id="address-panel">
+							<iframe height="200" frameborder="0" style=""
+								src="https://www.google.com/maps/embed/v1/place?q=4077+Bothwell+Circle,+El+Dorado+Hills,+CA,+United+States&key=AIzaSyBBZieWzxtF-eib8qozcs5yGNiokR4utY8"
+								allowfullscreen></iframe>
+
+						</div>
+
+						<div class="mdl-tabs__panel" id="hours-panel">
+							<div class="profile-hours mdl-card__actions">
+								<div class="general-availability">
+									{{#availability}}
+									<div class="availability-item">
+										<p>{{dayOfTheWeek}} {{start}} - {{end}}</p>
+									</div>
+									{{/availability}}
+								</div>
+							</div>
+						</div>
+					</div>
+
+
+				</div>
+			</div>
+
+
+			<div class="booking-info mdl-cell mdl-cell--9-col">
+				<div class="services-content" style="padding-top: 1em;">
+					<div class="mdl-grid">
+						<!-- services -->
+
+						{{#services}}
+						<div
+							class="service-card mdl-card mdl-shadow--2dp mdl-cell mdl-cell--3-col mdl-cell--4-col-tablet mdl-cell--4-col-phone">
+							<div class="mdl-card__title">
+								<div class="mdl-card__title-text">
+									<span class="service-name">{{name}}</span>
+								</div>
+							</div>
+
+							<div
+								class="service-description mdl-card__actions mdl-card--border">
+								{{description}}</div>
+							<div class="service-duration mdl-card__actions mdl-card--border">
+								{{duration}} minutes</div>
+							<div class="service-duration mdl-card__actions mdl-card--border">
+								<a
+									class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect"
+									href="/book.html?id=15902064550137401796&serviceId=0"> $<span
+									class="service-price">{{cost}}</span> - Book now
+								</a>
+							</div>
+						</div>
+						{{/services}}
+
+						<div class="mdl-cell mdl-cell--12-col">
+							<div class=""
+								style="text-align: center; color: rgba(117, 117, 117, 1); border-bottom: solid 1px rgba(117, 117, 117, .2); padding-bottom: 1em;">
+								<span>Full refund if cancelled {{cancellationDeadline}}
+									hours before appointment.</span>
+								<!-- credit card info should only be presented when it's actually being charged -->
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="gallery mdl-grid">
+
+					{{#photoUrls}}
+					<div class="mdl-card photo-card mdl-shadow--2dp">
+						<img class="photo" src="{{url}}" />
+					</div>
+					{{/photoUrls}}
+					<!--
+				<div class="mdl-card photo-card mdl-shadow--2dp" style="background: rgba(200,200,200,1.0);">
+					<div style="text-align: center;line-height:256px;color:rgba(80,80,80,.60);font-size:2em;">8 more...</div>
+				</div>
+				-->
+				</div>
+			</div>
+			<!-- end booking info -->
+		</div>
+
+
+		</main>
+	</div>
+
+</body>
+</html>
+
+<!--  
+<html>
   <head>
     <script>
       (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -55,7 +478,7 @@
     	</div>
     </div>
 
-	<!-- format of availability data is going to change -->
+	<!-- format of availability data is going to change 
     <div class="general-availability">
    		{{#availability}}
    			<div class="availability-item">
@@ -66,3 +489,4 @@
     </div>
   </body>
 </html>
+-->

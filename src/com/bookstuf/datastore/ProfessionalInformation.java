@@ -4,6 +4,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.UUID;
 
+import org.threeten.bp.ZoneId;
+
 import com.bookstuf.PublicReadOnly;
 import com.google.appengine.api.blobstore.BlobKey;
 import com.googlecode.objectify.annotation.Cache;
@@ -37,6 +39,8 @@ public class ProfessionalInformation {
     
     @Serialize LinkedList<PhotoUrl> photoUrls;
 
+    ZoneId timezone;
+    
     // SERVICES
     String aboutServices;
     String addressLine1;
@@ -58,6 +62,12 @@ public class ProfessionalInformation {
 			if (service.id == null) {
 				service.id = Integer.toString(nextServiceId++);
 			}
+		}
+	}
+	
+	@OnLoad void setTimezone() {
+		if (timezone == null) {
+			timezone = ZoneId.of("America/Los_Angeles");
 		}
 	}
 	
@@ -291,5 +301,9 @@ public class ProfessionalInformation {
 		}
 		
 		return null;
+	}
+
+	public ZoneId getTimezone() {
+		return timezone;
 	}
 }

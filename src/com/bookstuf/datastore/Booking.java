@@ -21,6 +21,12 @@ public class Booking implements Serializable {
 	Service service;
 	LocalTime startTime;
 	
+	String location;
+	String proName;
+	String proEmail;
+	String clientName;
+	String clientEmail;
+	
 	PaymentMethod paymentMethod;
 	String stripeCustomerId;
 	String stripeChargeId;
@@ -122,6 +128,12 @@ public class Booking implements Serializable {
 		out.writeObject(stripeChargeId);
 		
 		out.writeObject(paymentStatus);
+		
+		out.writeObject(location);
+		out.writeObject(proName);
+		out.writeObject(proEmail);
+		out.writeObject(clientName);
+		out.writeObject(clientEmail);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -144,6 +156,12 @@ public class Booking implements Serializable {
 		stripeChargeId = (String) in.readObject();
 		
 		paymentStatus = (PaymentStatus) in.readObject();
+
+		location = (String) in.readObject();
+		proName = (String) in.readObject();
+		proEmail = (String) in.readObject();
+		clientName = (String) in.readObject();
+		clientEmail = (String) in.readObject();
 	}
 
 	public Key<ProfessionalInformation> getProfessional() {
@@ -251,6 +269,43 @@ public class Booking implements Serializable {
 		builder.append("]");
 		return builder.toString();
 	}
+
+	public String getLocation() {
+		return location;
+	}
+
+	public String getProfessionalName() {
+		return proName;
+	}
+
+	public String getConsumerName() {
+		return clientName;
+	}
+
+	public String getProfessionalEmail() {
+		return proEmail;
+	}
+
+	public String getConsumerEmail() {
+		return clientEmail;
+	}
 	
+	public void setLocation(final String location) {
+		this.location = location;
+	}
 	
+	public void setProfessionalName(final String proName) {
+		this.proName = proName;
+	}
+	
+	public void setProfessionalEmail(final String proEmail) {
+		this.proEmail = proEmail;
+	}
+	
+	public void setConsumerName(final String clientName) {
+		this.clientName = clientName;
+	}
+	public void setConsumerEmail(final String clientEmail) {
+		this.clientEmail = clientEmail;
+	}
 }

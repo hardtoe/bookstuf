@@ -27,6 +27,9 @@
 		<!-- dropzone.js -->
 		<script src="dropzone.js"></script>
 		<link type=text/css rel=stylesheet href="dropzone.css" />
+		
+		<!-- jstz -->
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jstimezonedetect/1.0.4/jstz.min.js"></script>
 			
 		<!-- material design light -->
 		<link rel="stylesheet" href="https://storage.googleapis.com/code.getmdl.io/1.0.0/material.blue-red.min.css">
@@ -65,6 +68,8 @@
 			}
 
 			$(function() {
+				$('#timezone').val(jstz.determine().name());
+				
 				Dropzone.options.photoDropzone = {
 					init : function() {
 						this.on("success", function(file) {
@@ -266,6 +271,7 @@
 						</div><br />
 						
 						<h4>Address</h4>
+						<input type="hidden" id="timezone" name="timezone"></input>
 						<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
 							<input class="mdl-textfield__input" type="text" id="addressLine1" disabled></input>
 							<label class="mdl-textfield__label" for="addressLine1">Address Line One</label>

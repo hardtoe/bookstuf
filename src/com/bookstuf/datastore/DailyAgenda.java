@@ -2,14 +2,15 @@ package com.bookstuf.datastore;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
+import org.threeten.bp.Instant;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.LocalTime;
-import org.threeten.bp.ZoneOffset;
+import org.threeten.bp.ZoneId;
+import org.threeten.bp.ZonedDateTime;
 
 import com.googlecode.objectify.Key;
 import com.googlecode.objectify.annotation.Cache;
@@ -29,11 +30,39 @@ public class DailyAgenda {
 	@Index int numBookings;
 	@Index boolean hasBookings;
 	
-	@Index Date date;
+	@Index Instant startOfDay;
+	
+	LocalDate date;
+	ZoneId timezone;
+	
+	@OnSave public void onSave() {
+		numBookings = bookings.size();
+		hasBookings = numBookings > 0;
+		
+		startOfDay = 
+			ZonedDateTime.of(
+				date.getYear(), 
+				date.getMonthValue(), 
+				date.getDayOfMonth(), 
+				0, 
+				0, 
+				0, 
+				0, 
+				timezone)
+			.toInstant();
+	}
 	
 	public DailyAgenda() {
 		this.bookings = new TreeMap<LocalTime, Booking>();
 		this.cancelledBookings = new ArrayList<Booking>();
+	}
+	
+	public void setTimezone(final ZoneId timezone) {
+		this.timezone = timezone;
+	}
+	
+	public ZoneId getTimezone() {
+		return timezone;
 	}
 	
 	public void setOwnerAndDate(
@@ -44,11 +73,7 @@ public class DailyAgenda {
 			createKeyString(gitkitUserId, date);
 		
 		this.date =
-			new Date(date.atTime(0, 0).toEpochSecond(ZoneOffset.UTC) * 1000L);
-	}
-	
-	private static Date fromLocalDate(final LocalDate localDate) {
-		return new Date(localDate.atTime(0, 0).toEpochSecond(ZoneOffset.UTC) * 1000L);
+			date;
 	}
 	
 	protected static String createKeyString(
@@ -130,15 +155,6 @@ public class DailyAgenda {
 		
 		return
 			lhsEndTime.isAfter(rhs.getStartTime());
-	}
-	
-	@OnSave public void onSave() {
-		numBookings = bookings.size();
-		hasBookings = numBookings > 0;
-		
-		if (date == null) {
-			date = fromLocalDate(getDate());
-		}
 	}
 
 	public TreeMap<LocalTime, Booking> bookingMap() {

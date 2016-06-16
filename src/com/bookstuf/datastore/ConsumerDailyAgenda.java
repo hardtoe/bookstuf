@@ -20,6 +20,8 @@ public class ConsumerDailyAgenda extends DailyAgenda {
 		
 		ownerAndDate =
 			createKeyString(gitkitUserId, date);
+		
+		this.date = date;
 	}
 	
 	public static Key<ConsumerDailyAgenda> createConsumerKey(

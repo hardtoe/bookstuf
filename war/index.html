@@ -6,7 +6,10 @@
 			if (window.location.protocol != "https:") {
 				window.location.replace(window.location.href.replace("http://", "https://").replace("//bookstuf.com", "//www.bookstuf.com"));
 			}
-		</script>
+		</script>		
+		
+		<!-- jstz -->
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jstimezonedetect/1.0.4/jstz.min.js"></script>
 		
 		<meta name="google-site-verification" content="45XFs0yWCy-YBEDxnEPbVUKylejkI0GjYGYjeYm9aTA" />
 		
@@ -20,7 +23,6 @@
 		
 		  ga('create', 'UA-66119190-1', 'auto');
 		  ga('send', 'pageview');
-		
 		</script>
 	</head>
 	
@@ -29,5 +31,8 @@
 			<li><a href="console.html">Console</a></li>
 			<li><a href="checklist.html">Checklist</a></li>
 		</ul>	
+		<script type="text/javascript">
+			document.write(jstz.determine().name());
+		</script>
 	</body>
 </html>

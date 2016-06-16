@@ -16,6 +16,7 @@ import org.junit.Test;
 import org.threeten.bp.Duration;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.LocalTime;
+import org.threeten.bp.ZoneId;
 import org.threeten.bp.format.DateTimeFormatter;
 
 import com.google.gson.Gson;
@@ -151,6 +152,28 @@ public class BookstufLogicModule extends AbstractModule {
 				final JsonDeserializationContext context
 			) throws JsonParseException {
 				return Duration.ofMinutes(json.getAsJsonPrimitive().getAsNumber().longValue());
+			}
+		});
+		
+		gsonBuilder.registerTypeAdapter(ZoneId.class, new JsonSerializer<ZoneId>() {
+			@Override
+			public JsonElement serialize(
+				final ZoneId src, 
+				final Type typeOfSrc,
+				final JsonSerializationContext context
+			) {
+				return new JsonPrimitive(src.getId());
+			}
+		});
+		
+		gsonBuilder.registerTypeAdapter(ZoneId.class, new JsonDeserializer<ZoneId>() {
+			@Override
+			public ZoneId deserialize(
+				final JsonElement json, 
+				final Type typeOfSrc,
+				final JsonDeserializationContext context
+			) throws JsonParseException {
+				return ZoneId.of(json.getAsJsonPrimitive().getAsString());
 			}
 		});
 		
